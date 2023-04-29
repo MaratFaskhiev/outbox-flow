@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using OutboxFlow.Abstractions;
 
 namespace OutboxFlow.Configuration;
 
@@ -8,8 +9,8 @@ namespace OutboxFlow.Configuration;
 /// </summary>
 public sealed class Builder
 {
-    private Action<IServiceProvider, ProducerBuilder>? _producerConfigureAction;
     private Action<IServiceProvider, ConsumerBuilder>? _consumerConfigureAction;
+    private Action<IServiceProvider, ProducerBuilder>? _producerConfigureAction;
 
     /// <summary>
     /// Configures outbox produce pipelines.
@@ -17,9 +18,8 @@ public sealed class Builder
     /// <param name="configure">Configure action.</param>
     public Builder AddProducer(Action<IServiceProvider, ProducerBuilder> configure)
     {
-        if (_producerConfigureAction != null) {
+        if (_producerConfigureAction != null)
             throw new InvalidOperationException("An outbox producer is already configured.");
-        }
         _producerConfigureAction = configure;
         return this;
     }
@@ -30,9 +30,8 @@ public sealed class Builder
     /// <param name="configure">Configure action.</param>
     public Builder AddConsumer(Action<IServiceProvider, ConsumerBuilder> configure)
     {
-        if (_consumerConfigureAction != null) {
+        if (_consumerConfigureAction != null)
             throw new InvalidOperationException("An outbox consumer is already configured.");
-        }
         _consumerConfigureAction = configure;
         return this;
     }
@@ -53,15 +52,15 @@ public sealed class Builder
 
     private void BuildProducer(IServiceCollection services)
     {
-        if (_producerConfigureAction == null)
-        {
-            return;
-        }
+        if (_producerConfigureAction == null) return;
 
-        services.TryAddSingleton(sp => {
+        services.TryAddSingleton(sp =>
+        {
             var builder = new ProducerBuilder();
             _producerConfigureAction(sp, builder);
-            return builder.Build();
+            return builder.BuildRegistry();
         });
+
+        services.TryAddScoped<IProducer, Producer>();
     }
 }

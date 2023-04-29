@@ -1,25 +1,31 @@
-﻿using OutboxFlow.Abstractions;
+﻿using System.Data;
+using OutboxFlow.Abstractions;
 
 namespace OutboxFlow;
 
 /// <inheritdoc />
 public sealed class Producer : IProducer
 {
-    private readonly Dictionary<Type, object> _pipelines;
+    private readonly IProducePipelineRegistry _registry;
+    private readonly IServiceProvider _serviceProvider;
 
-    internal Producer(Dictionary<Type, object> pipelines)
+    /// <summary>
+    /// Ctor.
+    /// </summary>
+    /// <param name="registry">Pipeline registry.</param>
+    /// <param name="serviceProvider">Service provider.</param>
+    public Producer(IProducePipelineRegistry registry, IServiceProvider serviceProvider)
     {
-        _pipelines = pipelines;
+        _registry = registry;
+        _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc />
-    public async ValueTask ProduceAsync<T>(T message, IProduceContext context)
+    public async ValueTask ProduceAsync<T>(T message, IDbTransaction transaction, CancellationToken cancellationToken)
     {
-        if (!_pipelines.TryGetValue(typeof(T), out var pipeline))
-        {
-            throw new InvalidOperationException($"Message type \"{typeof(T).FullName}\" is not registered.");
-        }
+        var pipeline = _registry.GetPipeline<T>();
 
-        await ((IProducePipelineStep<T>)pipeline).InvokeAsync(message, context).ConfigureAwait(false);
+        var context = new ProduceContext(transaction, _serviceProvider, cancellationToken);
+        await pipeline.InvokeAsync(message, context).ConfigureAwait(false);
     }
 }

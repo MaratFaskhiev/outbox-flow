@@ -17,10 +17,8 @@ public sealed class ProducerBuilder
     public ProducerBuilder ForMessage<T>(Action<ProducePipeline<T>> configure)
     {
         if (_messagePipelines.ContainsKey(typeof(T)))
-        {
             throw new InvalidOperationException(
                 $"Produce pipeline for the message type \"{typeof(T).Name}\" is already registered.");
-        }
 
         var pipelineBuilder = new ProducePipeline<T>();
         configure(pipelineBuilder);
@@ -30,10 +28,10 @@ public sealed class ProducerBuilder
     }
 
     /// <summary>
-    /// Builds an outbox producer.
+    /// Builds a pipeline registry.
     /// </summary>
-    public IProducer Build()
+    public IProducePipelineRegistry BuildRegistry()
     {
-        return new Producer(_messagePipelines);
+        return new ProducePipelineRegistry(_messagePipelines);
     }
 }

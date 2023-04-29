@@ -12,17 +12,19 @@ public static class Program
     public static async Task Main(string[] args)
     {
         using var cts = new CancellationTokenSource();
-        if (Environment.UserInteractive) {
-            Console.CancelKeyPress += (_, e) => {
+        if (Environment.UserInteractive)
+            Console.CancelKeyPress += (_, e) =>
+            {
                 e.Cancel = true;
                 Log("\nCtrl+C sent. Shutdown..");
                 cts.Cancel();
             };
-        }
 
         using var host = Host.CreateDefaultBuilder(args)
-            .UseDefaultServiceProvider((ctx, opt) => {
-                if (ctx.HostingEnvironment.IsDevelopment()) {
+            .UseDefaultServiceProvider((ctx, opt) =>
+            {
+                if (ctx.HostingEnvironment.IsDevelopment())
+                {
                     opt.ValidateScopes = true;
                     opt.ValidateOnBuild = true;
                 }
@@ -45,6 +47,7 @@ public static class Program
                     producer
                         .ForMessage<SampleTextModel>(pipeline =>
                             pipeline
+                                .AddStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
                                 .AddStep(async (message, _) =>
                                 {
                                     await Task.Delay(1);
@@ -60,6 +63,7 @@ public static class Program
                         )
                         .ForMessage<SampleNumericModel>(pipeline =>
                             pipeline
+                                .AddStep<SampleMiddleware<SampleNumericModel>, SampleNumericModel>()
                                 .AddStep(async (message, _) =>
                                 {
                                     await Task.Delay(1);
@@ -77,12 +81,13 @@ public static class Program
                 .AddConsumer((sp, consumerBuilder) => { }));
 
         services.AddHostedService<Worker>();
+
+        services.AddScoped<SampleMiddleware<SampleTextModel>>();
+        services.AddScoped<SampleMiddleware<SampleNumericModel>>();
     }
 
     private static void Log(string msg)
     {
-        if (Environment.UserInteractive) {
-            Console.WriteLine(msg);
-        }
+        if (Environment.UserInteractive) Console.WriteLine(msg);
     }
 }

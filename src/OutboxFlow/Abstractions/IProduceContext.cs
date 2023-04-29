@@ -13,6 +13,11 @@ public interface IProduceContext
     public IDbTransaction Transaction { get; }
 
     /// <summary>
+    /// Gets the service provider.
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
     /// Gets the cancellation token.
     /// </summary>
     public CancellationToken CancellationToken { get; }

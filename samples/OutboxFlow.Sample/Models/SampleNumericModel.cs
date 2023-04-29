@@ -2,10 +2,10 @@
 
 public sealed class SampleNumericModel
 {
-    public int Value { get; }
-
     public SampleNumericModel(int value)
     {
         Value = value;
     }
+
+    public int Value { get; }
 }

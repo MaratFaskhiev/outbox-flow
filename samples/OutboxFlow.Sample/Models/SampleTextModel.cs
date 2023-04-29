@@ -2,10 +2,10 @@
 
 public sealed class SampleTextModel
 {
-    public string Value { get; }
-
     public SampleTextModel(string value)
     {
         Value = value;
     }
+
+    public string Value { get; }
 }

@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using System.Data;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Moq;
 using OutboxFlow.Abstractions;
 using OutboxFlow.Sample.Models;
 
@@ -7,8 +9,8 @@ namespace OutboxFlow.Sample;
 
 public sealed class Worker : BackgroundService
 {
-    private readonly IProducer _producer;
     private readonly ILogger<Worker> _logger;
+    private readonly IProducer _producer;
 
     public Worker(IProducer producer, ILogger<Worker> logger)
     {
@@ -23,14 +25,15 @@ public sealed class Worker : BackgroundService
         var messageId = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
+            messageId++;
+
             await _producer.ProduceAsync(
                 new SampleTextModel(
                     $"Message #{messageId}"),
-                new ProduceContext(null!, stoppingToken));
+                Mock.Of<IDbTransaction>(),
+                stoppingToken);
 
-            messageId++;
-
-            await Task.Delay(1000, stoppingToken);
+            await Task.Delay(10000, stoppingToken);
         }
     }
 }

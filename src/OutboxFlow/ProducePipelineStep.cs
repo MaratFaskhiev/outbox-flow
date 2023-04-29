@@ -21,28 +21,26 @@ public sealed class ProducePipelineStep<TIn, TOut> : IProducePipelineStep<TIn>
         _action = action;
     }
 
+    /// <inheritdoc />
+    public async ValueTask InvokeAsync(TIn message, IProduceContext context)
+    {
+        var result = await _action.Invoke(message, context).ConfigureAwait(false);
+
+        if (_nextStep == null) return;
+
+        await _nextStep.InvokeAsync(result, context).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Adds step to the pipeline
     /// </summary>
     /// <param name="action">Step.</param>
+    /// <typeparam name="TNext">Output parameter type.</typeparam>
     public ProducePipelineStep<TOut, TNext> AddStep<TNext>(
         Func<TOut, IProduceContext, ValueTask<TNext>> action)
     {
         var nextStep = new ProducePipelineStep<TOut, TNext>(action);
         _nextStep = nextStep;
         return nextStep;
-    }
-
-    /// <inheritdoc />
-    public async ValueTask InvokeAsync(TIn message, IProduceContext context)
-    {
-        var result = await _action.Invoke(message, context).ConfigureAwait(false);
-
-        if (_nextStep == null)
-        {
-            return;
-        }
-
-        await _nextStep.InvokeAsync(result, context).ConfigureAwait(false);
     }
 }

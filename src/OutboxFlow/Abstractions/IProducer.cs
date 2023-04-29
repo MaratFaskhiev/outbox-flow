@@ -1,4 +1,6 @@
-﻿namespace OutboxFlow.Abstractions;
+﻿using System.Data;
+
+namespace OutboxFlow.Abstractions;
 
 /// <summary>
 /// Produces an outbox message.
@@ -9,6 +11,8 @@ public interface IProducer
     /// Produces an outbox message.
     /// </summary>
     /// <param name="message">Message.</param>
-    /// <param name="context">Produce context.</param>
-    ValueTask ProduceAsync<T>(T message, IProduceContext context);
+    /// <param name="transaction">Transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <typeparam name="T">Message type.</typeparam>
+    ValueTask ProduceAsync<T>(T message, IDbTransaction transaction, CancellationToken cancellationToken);
 }

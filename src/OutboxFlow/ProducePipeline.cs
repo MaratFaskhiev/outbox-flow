@@ -13,10 +13,7 @@ public sealed class ProducePipeline<T> : IProducePipelineStep<T>
     /// <inheritdoc />
     public async ValueTask InvokeAsync(T message, IProduceContext context)
     {
-        if (_step == null)
-        {
-            return;
-        }
+        if (_step == null) return;
 
         await _step.InvokeAsync(message, context).ConfigureAwait(false);
     }
@@ -29,9 +26,7 @@ public sealed class ProducePipeline<T> : IProducePipelineStep<T>
     public ProducePipelineStep<T, TOut> AddStep<TOut>(
         Func<T, IProduceContext, ValueTask<TOut>> action)
     {
-        if (_step != null) {
-            throw new InvalidOperationException("The first step is already added.");
-        }
+        if (_step != null) throw new InvalidOperationException("The first step is already added.");
 
         var step = new ProducePipelineStep<T, TOut>(action);
         _step = step;
