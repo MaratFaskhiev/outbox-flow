@@ -1,0 +1,7 @@
+<Project>
+    <PropertyGroup>
+        <AnalysisMode>All</AnalysisMode>
+        <!-- CA1062: Validate arguments of public methods-->
+        <NoWarn>CA1062</NoWarn>
+    </PropertyGroup>
+</Project>
