@@ -36,4 +36,36 @@ public static class ProducePipelineExtensions
             return await middleware.InvokeAsync(message, context).ConfigureAwait(false);
         });
     }
+
+    /// <summary>
+    /// Sets the message key.
+    /// </summary>
+    /// <param name="pipeline">Pipeline.</param>
+    /// <param name="keyProvider">Provides a key value.</param>
+    /// <typeparam name="T">Pipeline input message type.</typeparam>
+    public static ProducePipelineStep<T, T> SetKey<T>(
+        this ProducePipeline<T> pipeline, Func<T, byte[]> keyProvider)
+    {
+        return pipeline.AddStep((message, context) =>
+        {
+            context.Key = keyProvider(message);
+            return new ValueTask<T>(message);
+        });
+    }
+
+    /// <summary>
+    /// Sets the message destination.
+    /// </summary>
+    /// <param name="pipeline">Pipeline.</param>
+    /// <param name="destination">Destination.</param>
+    /// <typeparam name="T">Pipeline input message type.</typeparam>
+    public static ProducePipelineStep<T, T> SetDestination<T>(
+        this ProducePipeline<T> pipeline, string destination)
+    {
+        return pipeline.AddStep((message, context) =>
+        {
+            context.Destination = destination;
+            return new ValueTask<T>(message);
+        });
+    }
 }
