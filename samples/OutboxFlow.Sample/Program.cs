@@ -3,7 +3,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OutboxFlow.Abstractions;
 using OutboxFlow.Configuration;
+using OutboxFlow.Postgres;
 using OutboxFlow.Sample.Models;
+using OutboxFlow.Serialization;
 
 namespace OutboxFlow.Sample;
 
@@ -16,7 +18,7 @@ public static class Program
             Console.CancelKeyPress += (_, e) =>
             {
                 e.Cancel = true;
-                Log("\nCtrl+C sent. Shutdown..");
+                Log("\nCtrl+C sent. Shutdown...");
                 cts.Cancel();
             };
 
@@ -39,46 +41,34 @@ public static class Program
     {
         services.AddLogging(cfg => cfg.AddConsole());
 
-        services.AddOutbox(outboxBuilder =>
-            outboxBuilder
-                .AddProducer((sp, producer) =>
-                {
-                    var logger = sp.GetRequiredService<ILogger<IProducer>>();
-                    producer
-                        .ForMessage<SampleTextModel>(pipeline =>
-                            pipeline
-                                .AddStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
-                                .AddStep(async (message, _) =>
-                                {
-                                    await Task.Delay(1);
-                                    logger.LogInformation(message.Value);
-                                    return message.Value.Length;
-                                })
-                                .AddStep(async (messageLength, _) =>
-                                {
-                                    await Task.Delay(1);
-                                    logger.LogInformation(messageLength.ToString());
-                                    return true;
-                                })
-                        )
-                        .ForMessage<SampleNumericModel>(pipeline =>
-                            pipeline
-                                .AddStep<SampleMiddleware<SampleNumericModel>, SampleNumericModel>()
-                                .AddStep(async (message, _) =>
-                                {
-                                    await Task.Delay(1);
-                                    logger.LogInformation(message.Value.ToString());
-                                    return message.Value.ToString();
-                                })
-                                .AddStep(async (messageText, _) =>
-                                {
-                                    await Task.Delay(1);
-                                    logger.LogInformation(messageText);
-                                    return true;
-                                })
-                        );
-                })
-                .AddConsumer((sp, consumerBuilder) => { }));
+        services
+            .UsePostgres()
+            .AddOutbox(outboxBuilder =>
+                outboxBuilder
+                    .AddProducer((sp, producer) =>
+                    {
+                        var logger = sp.GetRequiredService<ILogger<IProducer>>();
+                        producer
+                            .ForMessage<SampleTextModel>(pipeline =>
+                                pipeline
+                                    .AddStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
+                                    .AddStep((message, _) =>
+                                    {
+                                        var protoModel = new Protos.SampleTextModel
+                                        {
+                                            Value = message.Value
+                                        };
+
+                                        logger.LogInformation("Message is converted.");
+
+                                        return new ValueTask<Protos.SampleTextModel>(protoModel);
+                                    })
+                                    .SerializeToProtobuf()
+                                    .SetDestination("topic")
+                                    .Save()
+                            );
+                    })
+                    .AddConsumer((sp, consumerBuilder) => { }));
 
         services.AddHostedService<Worker>();
 

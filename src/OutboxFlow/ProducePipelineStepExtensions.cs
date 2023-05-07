@@ -3,6 +3,9 @@ using OutboxFlow.Abstractions;
 
 namespace OutboxFlow;
 
+/// <summary>
+/// Extension methods for adding middlewares and steps to the produce pipeline.
+/// </summary>
 public static class ProducePipelineStepExtensions
 {
     /// <summary>
@@ -75,6 +78,24 @@ public static class ProducePipelineStepExtensions
         {
             context.Destination = destination;
             return new ValueTask<TOut>(message);
+        });
+    }
+
+    /// <summary>
+    /// Saves the message to the outbox storage.
+    /// </summary>
+    /// <param name="step">Step.</param>
+    /// <typeparam name="TIn">Step input message type.</typeparam>
+    /// <typeparam name="TOut">Step output message type.</typeparam>
+    public static ProducePipelineStep<TOut, TOut> Save<TIn, TOut>(
+        this ProducePipelineStep<TIn, TOut> step)
+    {
+        return step.AddStep(async (message, context) =>
+        {
+            var storage = context.ServiceProvider.GetRequiredService<IStorage>();
+            await storage.SaveAsync(context).ConfigureAwait(false);
+
+            return message;
         });
     }
 }

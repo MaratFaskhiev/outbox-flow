@@ -2,6 +2,9 @@
 
 namespace OutboxFlow.Configuration;
 
+/// <summary>
+/// Extension method for setting up an outbox.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>

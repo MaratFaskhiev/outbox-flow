@@ -2,6 +2,8 @@
     <PropertyGroup>
         <AnalysisMode>All</AnalysisMode>
         <!-- CA1062: Validate arguments of public methods -->
-        <NoWarn>CA1062</NoWarn>
+        <!-- CA2007: Do not directly await a Task -->
+        <!-- CA1848: Use the LoggerMessage delegates -->
+        <NoWarn>CA1062;CA2007;CA1848</NoWarn>
     </PropertyGroup>
 </Project>

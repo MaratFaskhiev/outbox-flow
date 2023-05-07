@@ -17,7 +17,7 @@ public sealed class SampleMiddleware<T> : IProduceMiddleware<T, T>
     public ValueTask<T> InvokeAsync(T message, IProduceContext context)
     {
         _counter++;
-        _logger.LogInformation($"Middleware invoked: {_counter}");
+        _logger.LogInformation("Middleware invoked: {Counter}", _counter);
 
         return new ValueTask<T>(message);
     }

@@ -1,5 +1,8 @@
 ﻿namespace OutboxFlow.Serialization;
 
+/// <summary>
+/// Extension methods for setting up serialization.
+/// </summary>
 public static partial class ProducePipelineExtensions
 {
     /// <summary>

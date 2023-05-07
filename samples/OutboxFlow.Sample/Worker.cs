@@ -1,7 +1,7 @@
-﻿using System.Data;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Moq;
+using Npgsql;
 using OutboxFlow.Abstractions;
 using OutboxFlow.Sample.Models;
 
@@ -9,13 +9,15 @@ namespace OutboxFlow.Sample;
 
 public sealed class Worker : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
     private readonly IProducer _producer;
+    private readonly string? _connectionString;
+    private readonly ILogger<Worker> _logger;
 
-    public Worker(IProducer producer, ILogger<Worker> logger)
+    public Worker(IProducer producer, IConfiguration configuration, ILogger<Worker> logger)
     {
         _producer = producer;
         _logger = logger;
+        _connectionString = configuration.GetConnectionString("Postgres");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -27,11 +29,19 @@ public sealed class Worker : BackgroundService
         {
             messageId++;
 
-            await _producer.ProduceAsync(
-                new SampleTextModel(
-                    $"Message #{messageId}"),
-                Mock.Of<IDbTransaction>(),
-                stoppingToken);
+            await using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync(stoppingToken);
+
+                await using var transaction = await connection.BeginTransactionAsync(stoppingToken);
+
+                await _producer.ProduceAsync(
+                    new SampleTextModel($"Message #{messageId}"),
+                    transaction,
+                    stoppingToken);
+
+                await transaction.CommitAsync(stoppingToken);
+            }
 
             await Task.Delay(10000, stoppingToken);
         }
