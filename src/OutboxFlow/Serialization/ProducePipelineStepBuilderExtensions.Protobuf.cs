@@ -1,11 +1,12 @@
 ﻿using Google.Protobuf;
+using OutboxFlow.Configuration;
 
 namespace OutboxFlow.Serialization;
 
 /// <summary>
 /// Extension methods for setting up serialization.
 /// </summary>
-public static partial class ProducePipelineStepExtensions
+public static partial class ProducePipelineStepBuilderExtensions
 {
     /// <summary>
     /// Serialize a message to a byte array in protobuf encoding.
@@ -13,8 +14,8 @@ public static partial class ProducePipelineStepExtensions
     /// <param name="step">Step.</param>
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStep<TOut, TOut> SerializeToProtobuf<TIn, TOut>(
-        this ProducePipelineStep<TIn, TOut> step) where TOut : IMessage
+    public static ProducePipelineStepBuilder<TOut, TOut> SerializeToProtobuf<TIn, TOut>(
+        this ProducePipelineStepBuilder<TIn, TOut> step) where TOut : IMessage
     {
         return step.AddStep((message, context) =>
         {
@@ -31,8 +32,8 @@ public static partial class ProducePipelineStepExtensions
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
     /// <typeparam name="TKey">Message key type.</typeparam>
-    public static ProducePipelineStep<TOut, TOut> SerializeKeyToProtobuf<TIn, TOut, TKey>(
-        this ProducePipelineStep<TIn, TOut> step, Func<TOut, TKey> keyProvider)
+    public static ProducePipelineStepBuilder<TOut, TOut> SerializeKeyToProtobuf<TIn, TOut, TKey>(
+        this ProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
         where TKey : IMessage
     {
         return step.AddStep((message, context) =>

@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OutboxFlow.Abstractions;
 
-namespace OutboxFlow;
+namespace OutboxFlow.Configuration;
 
 /// <summary>
 /// Extension methods for adding middlewares and steps to the produce pipeline.
 /// </summary>
-public static class ProducePipelineStepExtensions
+public static class ProducePipelineStepBuilderExtensions
 {
     /// <summary>
     /// Adds a middleware to the pipeline.
@@ -15,8 +15,8 @@ public static class ProducePipelineStepExtensions
     /// <typeparam name="TMiddleware">Middleware type.</typeparam>
     /// <typeparam name="TIn">Current step input message type.</typeparam>
     /// <typeparam name="TOut">Current step output message type.</typeparam>
-    public static ProducePipelineStep<TOut, TOut> AddStep<TMiddleware, TIn, TOut>(
-        this ProducePipelineStep<TIn, TOut> step)
+    public static ProducePipelineStepBuilder<TOut, TOut> AddStep<TMiddleware, TIn, TOut>(
+        this ProducePipelineStepBuilder<TIn, TOut> step)
         where TMiddleware : IProduceMiddleware<TOut, TOut>
     {
         return step.AddStep(async (message, context) =>
@@ -35,8 +35,8 @@ public static class ProducePipelineStepExtensions
     /// <typeparam name="TIn">Middleware input message type.</typeparam>
     /// <typeparam name="TOut">Middleware output message type.</typeparam>
     /// <typeparam name="TStep">Current step input message type.</typeparam>
-    public static ProducePipelineStep<TIn, TOut> AddStep<TMiddleware, TIn, TOut, TStep>(
-        this ProducePipelineStep<TStep, TIn> step)
+    public static ProducePipelineStepBuilder<TIn, TOut> AddStep<TMiddleware, TIn, TOut, TStep>(
+        this ProducePipelineStepBuilder<TStep, TIn> step)
         where TMiddleware : IProduceMiddleware<TIn, TOut>
     {
         return step.AddStep(async (message, context) =>
@@ -54,8 +54,8 @@ public static class ProducePipelineStepExtensions
     /// <param name="keyProvider">Provides a key value.</param>
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStep<TOut, TOut> SetKey<TIn, TOut>(
-        this ProducePipelineStep<TIn, TOut> step, Func<TOut, byte[]> keyProvider)
+    public static ProducePipelineStepBuilder<TOut, TOut> SetKey<TIn, TOut>(
+        this ProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, byte[]> keyProvider)
     {
         return step.AddStep((message, context) =>
         {
@@ -71,8 +71,8 @@ public static class ProducePipelineStepExtensions
     /// <param name="destination">Destination.</param>
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStep<TOut, TOut> SetDestination<TIn, TOut>(
-        this ProducePipelineStep<TIn, TOut> step, string destination)
+    public static ProducePipelineStepBuilder<TOut, TOut> SetDestination<TIn, TOut>(
+        this ProducePipelineStepBuilder<TIn, TOut> step, string destination)
     {
         return step.AddStep((message, context) =>
         {
@@ -87,8 +87,8 @@ public static class ProducePipelineStepExtensions
     /// <param name="step">Step.</param>
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStep<TOut, TOut> Save<TIn, TOut>(
-        this ProducePipelineStep<TIn, TOut> step)
+    public static ProducePipelineStepBuilder<TOut, TOut> Save<TIn, TOut>(
+        this ProducePipelineStepBuilder<TIn, TOut> step)
     {
         return step.AddStep(async (message, context) =>
         {

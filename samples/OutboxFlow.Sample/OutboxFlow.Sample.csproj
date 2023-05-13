@@ -9,25 +9,25 @@
 
     <ItemGroup>
         <PackageReference Include="Grpc.Tools" Version="2.54.0">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\OutboxFlow.Postgres\OutboxFlow.Postgres.csproj" />
-        <ProjectReference Include="..\..\src\OutboxFlow\OutboxFlow.csproj" />
+        <ProjectReference Include="..\..\src\OutboxFlow.Postgres\OutboxFlow.Postgres.csproj"/>
+        <ProjectReference Include="..\..\src\OutboxFlow\OutboxFlow.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="**\*.proto" />
+        <Protobuf Include="**\*.proto"/>
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="appsettings.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
+        <None Update="appsettings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>

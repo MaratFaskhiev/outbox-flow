@@ -1,45 +1,42 @@
 ﻿using OutboxFlow.Abstractions;
+using OutboxFlow.Produce;
 
-namespace OutboxFlow;
+namespace OutboxFlow.Configuration;
 
 /// <summary>
-/// Outbox produce pipeline step.
+/// Outbox produce pipeline step builder.
 /// </summary>
 /// <typeparam name="TIn">Input parameter type.</typeparam>
 /// <typeparam name="TOut">Output parameter type.</typeparam>
-public sealed class ProducePipelineStep<TIn, TOut> : IProducePipelineStep<TIn>
+public sealed class ProducePipelineStepBuilder<TIn, TOut> : IProducePipelineStepBuilder<TIn>
 {
     private readonly Func<TIn, IProduceContext, ValueTask<TOut>> _action;
-    private IProducePipelineStep<TOut>? _nextStep;
+    private IProducePipelineStepBuilder<TOut>? _nextStep;
 
     /// <summary>
     /// Ctor.
     /// </summary>
     /// <param name="action">Pipeline action.</param>
-    public ProducePipelineStep(Func<TIn, IProduceContext, ValueTask<TOut>> action)
+    public ProducePipelineStepBuilder(Func<TIn, IProduceContext, ValueTask<TOut>> action)
     {
         _action = action;
     }
 
     /// <inheritdoc />
-    public async ValueTask InvokeAsync(TIn message, IProduceContext context)
+    public IProducePipelineStep<TIn> Build()
     {
-        var result = await _action.Invoke(message, context).ConfigureAwait(false);
-
-        if (_nextStep == null) return;
-
-        await _nextStep.InvokeAsync(result, context).ConfigureAwait(false);
+        return new ProducePipelineStep<TIn, TOut>(_action, _nextStep?.Build());
     }
 
     /// <summary>
-    /// Adds step to the pipeline
+    /// Adds step to the pipeline.
     /// </summary>
     /// <param name="action">Step.</param>
     /// <typeparam name="TNext">Output parameter type.</typeparam>
-    public ProducePipelineStep<TOut, TNext> AddStep<TNext>(
+    public ProducePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
         Func<TOut, IProduceContext, ValueTask<TNext>> action)
     {
-        var nextStep = new ProducePipelineStep<TOut, TNext>(action);
+        var nextStep = new ProducePipelineStepBuilder<TOut, TNext>(action);
         _nextStep = nextStep;
         return nextStep;
     }

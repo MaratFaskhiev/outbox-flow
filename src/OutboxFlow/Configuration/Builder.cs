@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OutboxFlow.Abstractions;
+using OutboxFlow.Produce;
 
 namespace OutboxFlow.Configuration;
 

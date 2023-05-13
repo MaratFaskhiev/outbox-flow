@@ -1,24 +1,24 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using OutboxFlow.Configuration;
 
 namespace OutboxFlow.Serialization;
 
 /// <summary>
 /// Extension methods for setting up serialization.
 /// </summary>
-public static partial class ProducePipelineStepExtensions
+public static partial class ProducePipelineBuilderExtensions
 {
     /// <summary>
     /// Serialize a message by using the specified serializer.
     /// </summary>
-    /// <param name="step">Step.</param>
+    /// <param name="pipeline">Pipeline.</param>
     /// <typeparam name="TSerializer">Serializer type.</typeparam>
-    /// <typeparam name="TIn">Step input message type.</typeparam>
-    /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStep<TOut, TOut> Serialize<TSerializer, TIn, TOut>(
-        this ProducePipelineStep<TIn, TOut> step)
+    /// <typeparam name="T">Pipeline input message type.</typeparam>
+    public static ProducePipelineStepBuilder<T, T> Serialize<TSerializer, T>(
+        this ProducePipelineBuilder<T> pipeline)
         where TSerializer : ISerializer<byte[]>
     {
-        return step.AddStep(async (message, context) =>
+        return pipeline.AddStep(async (message, context) =>
         {
             var serializer = context.ServiceProvider.GetRequiredService<TSerializer>();
             context.Value = await serializer.SerializeAsync(message, context.CancellationToken)
@@ -30,17 +30,16 @@ public static partial class ProducePipelineStepExtensions
     /// <summary>
     /// Serialize a message key by using the specified serializer.
     /// </summary>
-    /// <param name="step">Step.</param>
+    /// <param name="pipeline">Pipeline.</param>
     /// <param name="keyProvider">Provides a key value to serialize.</param>
     /// <typeparam name="TSerializer">Serializer type.</typeparam>
-    /// <typeparam name="TIn">Step input message type.</typeparam>
-    /// <typeparam name="TOut">Step output message type.</typeparam>
+    /// <typeparam name="T">Pipeline input message type.</typeparam>
     /// <typeparam name="TKey">Message key type.</typeparam>
-    public static ProducePipelineStep<TOut, TOut> SerializeKey<TSerializer, TIn, TOut, TKey>(
-        this ProducePipelineStep<TIn, TOut> step, Func<TOut, TKey> keyProvider)
+    public static ProducePipelineStepBuilder<T, T> SerializeKey<TSerializer, T, TKey>(
+        this ProducePipelineBuilder<T> pipeline, Func<T, TKey> keyProvider)
         where TSerializer : ISerializer<byte[]>
     {
-        return step.AddStep(async (message, context) =>
+        return pipeline.AddStep(async (message, context) =>
         {
             var serializer = context.ServiceProvider.GetRequiredService<TSerializer>();
             context.Key = await serializer.SerializeAsync(keyProvider(message), context.CancellationToken)

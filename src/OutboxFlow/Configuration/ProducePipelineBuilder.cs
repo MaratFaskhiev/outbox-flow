@@ -1,21 +1,20 @@
 ﻿using OutboxFlow.Abstractions;
+using OutboxFlow.Produce;
 
-namespace OutboxFlow;
+namespace OutboxFlow.Configuration;
 
 /// <summary>
-/// Outbox produce pipeline.
+/// Outbox produce pipeline builder.
 /// </summary>
 /// <typeparam name="T">Message type to produce.</typeparam>
-public sealed class ProducePipeline<T> : IProducePipelineStep<T>
+public sealed class ProducePipelineBuilder<T> : IProducePipelineStepBuilder<T>
 {
-    private IProducePipelineStep<T>? _step;
+    private IProducePipelineStepBuilder<T>? _step;
 
     /// <inheritdoc />
-    public async ValueTask InvokeAsync(T message, IProduceContext context)
+    public IProducePipelineStep<T> Build()
     {
-        if (_step == null) return;
-
-        await _step.InvokeAsync(message, context).ConfigureAwait(false);
+        return new ProducePipeline<T>(_step?.Build());
     }
 
     /// <summary>
@@ -23,12 +22,12 @@ public sealed class ProducePipeline<T> : IProducePipelineStep<T>
     /// </summary>
     /// <param name="action">Step.</param>
     /// <typeparam name="TOut">Output parameter type.</typeparam>
-    public ProducePipelineStep<T, TOut> AddStep<TOut>(
+    public ProducePipelineStepBuilder<T, TOut> AddStep<TOut>(
         Func<T, IProduceContext, ValueTask<TOut>> action)
     {
         if (_step != null) throw new InvalidOperationException("The first step is already added.");
 
-        var step = new ProducePipelineStep<T, TOut>(action);
+        var step = new ProducePipelineStepBuilder<T, TOut>(action);
         _step = step;
         return step;
     }

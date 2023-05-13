@@ -31,7 +31,7 @@ values (@destination, @key, @value, @created_at);";
             command.CommandText = InsertCommandText;
 
             command.Parameters.AddWithValue("destination", context.Destination);
-            command.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?)context.Key ?? DBNull.Value);
+            command.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) context.Key ?? DBNull.Value);
             command.Parameters.AddWithValue("value", context.Value);
             command.Parameters.AddWithValue("created_at", DateTime.UtcNow);
 

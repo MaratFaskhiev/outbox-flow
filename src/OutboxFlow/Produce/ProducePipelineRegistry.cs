@@ -1,6 +1,6 @@
 ﻿using OutboxFlow.Abstractions;
 
-namespace OutboxFlow;
+namespace OutboxFlow.Produce;
 
 /// <inheritdoc />
 public sealed class ProducePipelineRegistry : IProducePipelineRegistry
@@ -18,6 +18,6 @@ public sealed class ProducePipelineRegistry : IProducePipelineRegistry
         if (!_pipelines.TryGetValue(typeof(T), out var pipeline))
             throw new InvalidOperationException($"Message type \"{typeof(T).FullName}\" is not registered.");
 
-        return (IProducePipelineStep<T>)pipeline;
+        return (IProducePipelineStep<T>) pipeline;
     }
 }

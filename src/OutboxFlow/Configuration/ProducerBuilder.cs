@@ -1,4 +1,5 @@
 ﻿using OutboxFlow.Abstractions;
+using OutboxFlow.Produce;
 
 namespace OutboxFlow.Configuration;
 
@@ -14,15 +15,15 @@ public sealed class ProducerBuilder
     /// </summary>
     /// <param name="configure">Configure action.</param>
     /// <typeparam name="T">Message type.</typeparam>
-    public ProducerBuilder ForMessage<T>(Action<ProducePipeline<T>> configure)
+    public ProducerBuilder ForMessage<T>(Action<ProducePipelineBuilder<T>> configure)
     {
         if (_messagePipelines.ContainsKey(typeof(T)))
             throw new InvalidOperationException(
                 $"Produce pipeline for the message type \"{typeof(T).Name}\" is already registered.");
 
-        var pipelineBuilder = new ProducePipeline<T>();
+        var pipelineBuilder = new ProducePipelineBuilder<T>();
         configure(pipelineBuilder);
-        _messagePipelines.Add(typeof(T), pipelineBuilder);
+        _messagePipelines.Add(typeof(T), pipelineBuilder.Build());
 
         return this;
     }

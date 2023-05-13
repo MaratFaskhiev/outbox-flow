@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using OutboxFlow.Abstractions;
 
-namespace OutboxFlow;
+namespace OutboxFlow.Produce;
 
 /// <inheritdoc />
 public sealed class Producer : IProducer

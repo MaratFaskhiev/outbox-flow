@@ -9,9 +9,9 @@ namespace OutboxFlow.Sample;
 
 public sealed class Worker : BackgroundService
 {
-    private readonly IProducer _producer;
     private readonly string? _connectionString;
     private readonly ILogger<Worker> _logger;
+    private readonly IProducer _producer;
 
     public Worker(IProducer producer, IConfiguration configuration, ILogger<Worker> logger)
     {
