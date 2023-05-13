@@ -16,10 +16,10 @@ public static class ProducePipelineExtensions
     public static ProducePipelineStepBuilder<T, T> SerializeToProtobuf<T>(
         this ProducePipelineBuilder<T> pipeline) where T : IMessage
     {
-        return pipeline.AddStep((message, context) =>
+        return pipeline.AddSyncStep((message, context) =>
         {
             context.Value = message.ToByteArray();
-            return new ValueTask<T>(message);
+            return message;
         });
     }
 
@@ -34,10 +34,10 @@ public static class ProducePipelineExtensions
         this ProducePipelineBuilder<T> pipeline, Func<T, TKey> keyProvider)
         where TKey : IMessage
     {
-        return pipeline.AddStep((message, context) =>
+        return pipeline.AddSyncStep((message, context) =>
         {
             context.Key = keyProvider(message).ToByteArray();
-            return new ValueTask<T>(message);
+            return message;
         });
     }
 }

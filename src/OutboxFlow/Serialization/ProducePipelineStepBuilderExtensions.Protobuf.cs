@@ -20,7 +20,7 @@ public static partial class ProducePipelineStepBuilderExtensions
         return step.AddStep((message, context) =>
         {
             context.Value = message.ToByteArray();
-            return new ValueTask<TOut>(message);
+            return message;
         });
     }
 
@@ -39,7 +39,7 @@ public static partial class ProducePipelineStepBuilderExtensions
         return step.AddStep((message, context) =>
         {
             context.Key = keyProvider(message).ToByteArray();
-            return new ValueTask<TOut>(message);
+            return message;
         });
     }
 }

@@ -18,11 +18,10 @@ public static partial class ProducePipelineBuilderExtensions
         this ProducePipelineBuilder<T> pipeline)
         where TSerializer : ISerializer<byte[]>
     {
-        return pipeline.AddStep(async (message, context) =>
+        return pipeline.AddSyncStep((message, context) =>
         {
             var serializer = context.ServiceProvider.GetRequiredService<TSerializer>();
-            context.Value = await serializer.SerializeAsync(message, context.CancellationToken)
-                .ConfigureAwait(false);
+            context.Value = serializer.Serialize(message);
             return message;
         });
     }
@@ -39,11 +38,10 @@ public static partial class ProducePipelineBuilderExtensions
         this ProducePipelineBuilder<T> pipeline, Func<T, TKey> keyProvider)
         where TSerializer : ISerializer<byte[]>
     {
-        return pipeline.AddStep(async (message, context) =>
+        return pipeline.AddSyncStep((message, context) =>
         {
             var serializer = context.ServiceProvider.GetRequiredService<TSerializer>();
-            context.Key = await serializer.SerializeAsync(keyProvider(message), context.CancellationToken)
-                .ConfigureAwait(false);
+            context.Key = serializer.Serialize(keyProvider(message));
             return message;
         });
     }

@@ -51,9 +51,12 @@ public static class Program
                         producer
                             .ForMessage<SampleTextModel>(pipeline =>
                                 pipeline
-                                    .AddStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
-                                    .AddStep((message, _) =>
+                                    .AddSyncStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
+                                    .AddStep(async (message, _) =>
                                     {
+                                        // some async work
+                                        await Task.Delay(1);
+
                                         var protoModel = new Protos.SampleTextModel
                                         {
                                             Value = message.Value
@@ -61,7 +64,7 @@ public static class Program
 
                                         logger.LogInformation("Message is converted.");
 
-                                        return new ValueTask<Protos.SampleTextModel>(protoModel);
+                                        return protoModel;
                                     })
                                     .SerializeToProtobuf()
                                     .SetDestination("topic")

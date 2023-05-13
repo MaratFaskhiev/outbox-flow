@@ -18,10 +18,9 @@ public static partial class ProducePipelineStepBuilderExtensions
     {
         var jsonSerializer = new JsonSerializer();
 
-        return step.AddStep(async (message, context) =>
+        return step.AddStep((message, context) =>
         {
-            context.Value = await jsonSerializer.SerializeAsync(message, context.CancellationToken)
-                .ConfigureAwait(false);
+            context.Value = jsonSerializer.Serialize(message);
             return message;
         });
     }
@@ -39,10 +38,9 @@ public static partial class ProducePipelineStepBuilderExtensions
     {
         var jsonSerializer = new JsonSerializer();
 
-        return step.AddStep(async (message, context) =>
+        return step.AddStep((message, context) =>
         {
-            context.Key = await jsonSerializer.SerializeAsync(keyProvider(message), context.CancellationToken)
-                .ConfigureAwait(false);
+            context.Key = jsonSerializer.Serialize(keyProvider(message));
             return message;
         });
     }

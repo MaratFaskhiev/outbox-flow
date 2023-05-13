@@ -41,6 +41,38 @@ public static class ProducePipelineBuilderExtensions
     }
 
     /// <summary>
+    /// Adds a synchronous middleware to the pipeline.
+    /// </summary>
+    /// <param name="pipeline">Pipeline.</param>
+    /// <typeparam name="TMiddleware">Middleware type.</typeparam>
+    /// <typeparam name="T">Message type.</typeparam>
+    public static ProducePipelineStepBuilder<T, T> AddSyncStep<TMiddleware, T>(
+        this ProducePipelineBuilder<T> pipeline)
+        where TMiddleware : IProduceSyncMiddleware<T, T>
+    {
+        return pipeline.AddSyncStep<TMiddleware, T, T>();
+    }
+
+    /// <summary>
+    /// Adds a synchronous middleware to the pipeline.
+    /// </summary>
+    /// <param name="pipeline">Pipeline.</param>
+    /// <typeparam name="TMiddleware">Middleware type.</typeparam>
+    /// <typeparam name="TIn">Middleware input message type.</typeparam>
+    /// <typeparam name="TOut">Middleware output message type.</typeparam>
+    public static ProducePipelineStepBuilder<TIn, TOut> AddSyncStep<TMiddleware, TIn, TOut>(
+        this ProducePipelineBuilder<TIn> pipeline)
+        where TMiddleware : IProduceSyncMiddleware<TIn, TOut>
+    {
+        return pipeline.AddSyncStep((message, context) =>
+        {
+            var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
+
+            return middleware.Invoke(message, context);
+        });
+    }
+
+    /// <summary>
     /// Sets the message key.
     /// </summary>
     /// <param name="pipeline">Pipeline.</param>
@@ -49,10 +81,10 @@ public static class ProducePipelineBuilderExtensions
     public static ProducePipelineStepBuilder<T, T> SetKey<T>(
         this ProducePipelineBuilder<T> pipeline, Func<T, byte[]> keyProvider)
     {
-        return pipeline.AddStep((message, context) =>
+        return pipeline.AddSyncStep((message, context) =>
         {
             context.Key = keyProvider(message);
-            return new ValueTask<T>(message);
+            return message;
         });
     }
 
@@ -65,10 +97,10 @@ public static class ProducePipelineBuilderExtensions
     public static ProducePipelineStepBuilder<T, T> SetDestination<T>(
         this ProducePipelineBuilder<T> pipeline, string destination)
     {
-        return pipeline.AddStep((message, context) =>
+        return pipeline.AddSyncStep((message, context) =>
         {
             context.Destination = destination;
-            return new ValueTask<T>(message);
+            return message;
         });
     }
 

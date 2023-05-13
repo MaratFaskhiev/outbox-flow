@@ -9,12 +9,9 @@ public sealed class JsonSerializer : ISerializer<byte[]>
     /// Serializes the specified value to a JSON string, encoded as UTF-8 bytes.
     /// </summary>
     /// <param name="value">Value to serialize.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
     /// <typeparam name="TValue">Value type.</typeparam>
-    public ValueTask<byte[]> SerializeAsync<TValue>(TValue value, CancellationToken cancellationToken)
+    public byte[] Serialize<TValue>(TValue value)
     {
-        var serializedValue = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value);
-
-        return new ValueTask<byte[]>(serializedValue);
+        return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value);
     }
 }

@@ -10,7 +10,6 @@ public interface ISerializer<T>
     /// Serializes the specified value.
     /// </summary>
     /// <param name="value">Value to serialize.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
     /// <typeparam name="TValue">Value type.</typeparam>
-    ValueTask<T> SerializeAsync<TValue>(TValue value, CancellationToken cancellationToken);
+    T Serialize<TValue>(TValue value);
 }

@@ -48,6 +48,45 @@ public static class ProducePipelineStepBuilderExtensions
     }
 
     /// <summary>
+    /// Adds a synchronous middleware to the pipeline.
+    /// </summary>
+    /// <param name="step">Step.</param>
+    /// <typeparam name="TMiddleware">Middleware type.</typeparam>
+    /// <typeparam name="TIn">Current step input message type.</typeparam>
+    /// <typeparam name="TOut">Current step output message type.</typeparam>
+    public static ProducePipelineStepBuilder<TOut, TOut> AddSyncStep<TMiddleware, TIn, TOut>(
+        this ProducePipelineStepBuilder<TIn, TOut> step)
+        where TMiddleware : IProduceSyncMiddleware<TOut, TOut>
+    {
+        return step.AddStep((message, context) =>
+        {
+            var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
+
+            return middleware.Invoke(message, context);
+        });
+    }
+
+    /// <summary>
+    /// Adds a synchronous middleware to the pipeline.
+    /// </summary>
+    /// <param name="step">Step.</param>
+    /// <typeparam name="TMiddleware">Middleware type.</typeparam>
+    /// <typeparam name="TIn">Middleware input message type.</typeparam>
+    /// <typeparam name="TOut">Middleware output message type.</typeparam>
+    /// <typeparam name="TStep">Current step input message type.</typeparam>
+    public static ProducePipelineStepBuilder<TIn, TOut> AddSyncStep<TMiddleware, TIn, TOut, TStep>(
+        this ProducePipelineStepBuilder<TStep, TIn> step)
+        where TMiddleware : IProduceSyncMiddleware<TIn, TOut>
+    {
+        return step.AddStep((message, context) =>
+        {
+            var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
+
+            return middleware.Invoke(message, context);
+        });
+    }
+
+    /// <summary>
     /// Sets the message key.
     /// </summary>
     /// <param name="step">Step.</param>
@@ -60,7 +99,7 @@ public static class ProducePipelineStepBuilderExtensions
         return step.AddStep((message, context) =>
         {
             context.Key = keyProvider(message);
-            return new ValueTask<TOut>(message);
+            return message;
         });
     }
 
@@ -77,7 +116,7 @@ public static class ProducePipelineStepBuilderExtensions
         return step.AddStep((message, context) =>
         {
             context.Destination = destination;
-            return new ValueTask<TOut>(message);
+            return message;
         });
     }
 

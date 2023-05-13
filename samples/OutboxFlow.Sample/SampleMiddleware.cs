@@ -3,7 +3,7 @@ using OutboxFlow.Abstractions;
 
 namespace OutboxFlow.Sample;
 
-public sealed class SampleMiddleware<T> : IProduceMiddleware<T, T>
+public sealed class SampleMiddleware<T> : IProduceSyncMiddleware<T, T>
 {
     private readonly ILogger<SampleMiddleware<T>> _logger;
 
@@ -14,11 +14,11 @@ public sealed class SampleMiddleware<T> : IProduceMiddleware<T, T>
         _logger = logger;
     }
 
-    public ValueTask<T> InvokeAsync(T message, IProduceContext context)
+    public T Invoke(T message, IProduceContext context)
     {
         _counter++;
         _logger.LogInformation("Middleware invoked: {Counter}", _counter);
 
-        return new ValueTask<T>(message);
+        return message;
     }
 }
