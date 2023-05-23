@@ -131,7 +131,7 @@ public static class ProducePipelineStepBuilderExtensions
     {
         return step.AddStep(async (message, context) =>
         {
-            var storage = context.ServiceProvider.GetRequiredService<IStorage>();
+            var storage = context.ServiceProvider.GetRequiredService<IOutboxStorage>();
             await storage.SaveAsync(context).ConfigureAwait(false);
 
             return message;

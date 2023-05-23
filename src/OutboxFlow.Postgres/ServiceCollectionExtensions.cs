@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using OutboxFlow.Abstractions;
 
 namespace OutboxFlow.Postgres;
@@ -9,11 +10,15 @@ namespace OutboxFlow.Postgres;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds PostgreSQL <see cref="IStorage" /> implementation.
+    /// Adds PostgreSQL <see cref="IOutboxStorage" /> implementation.
     /// </summary>
     /// <param name="services">Collection of service descriptors.</param>
-    public static IServiceCollection UsePostgres(this IServiceCollection services)
+    /// <param name="connectionString">Connection string.</param>
+    public static IServiceCollection UsePostgres(this IServiceCollection services, string connectionString)
     {
-        return services.AddScoped<IStorage, Storage>();
+        services.TryAddSingleton<IDbConnectionFactory>(new DefaultDbConnectionFactory(connectionString));
+        services.TryAddScoped<IOutboxStorage, OutboxStorage>();
+
+        return services;
     }
 }

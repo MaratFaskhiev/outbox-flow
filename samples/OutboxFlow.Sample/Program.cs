@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OutboxFlow.Abstractions;
@@ -18,18 +19,16 @@ public static class Program
             Console.CancelKeyPress += (_, e) =>
             {
                 e.Cancel = true;
-                Log("\nCtrl+C sent. Shutdown...");
                 cts.Cancel();
             };
 
         using var host = Host.CreateDefaultBuilder(args)
             .UseDefaultServiceProvider((ctx, opt) =>
             {
-                if (ctx.HostingEnvironment.IsDevelopment())
-                {
-                    opt.ValidateScopes = true;
-                    opt.ValidateOnBuild = true;
-                }
+                if (!ctx.HostingEnvironment.IsDevelopment()) return;
+
+                opt.ValidateScopes = true;
+                opt.ValidateOnBuild = true;
             })
             .ConfigureServices(ConfigureServices)
             .Build();
@@ -37,12 +36,12 @@ public static class Program
         await host.RunAsync(cts.Token);
     }
 
-    private static void ConfigureServices(IServiceCollection services)
+    private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
     {
         services.AddLogging(cfg => cfg.AddConsole());
 
         services
-            .UsePostgres()
+            .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
             .AddOutbox(outboxBuilder =>
                 outboxBuilder
                     .AddProducer((sp, producer) =>
@@ -77,10 +76,5 @@ public static class Program
 
         services.AddScoped<SampleMiddleware<SampleTextModel>>();
         services.AddScoped<SampleMiddleware<SampleNumericModel>>();
-    }
-
-    private static void Log(string msg)
-    {
-        if (Environment.UserInteractive) Console.WriteLine(msg);
     }
 }

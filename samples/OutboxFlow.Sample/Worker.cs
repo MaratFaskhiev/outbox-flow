@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.Data;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -9,7 +10,7 @@ namespace OutboxFlow.Sample;
 
 public sealed class Worker : BackgroundService
 {
-    private readonly string? _connectionString;
+    private readonly string _connectionString;
     private readonly ILogger<Worker> _logger;
     private readonly IProducer _producer;
 
@@ -17,7 +18,7 @@ public sealed class Worker : BackgroundService
     {
         _producer = producer;
         _logger = logger;
-        _connectionString = configuration.GetConnectionString("Postgres");
+        _connectionString = configuration.GetConnectionString("Postgres")!;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,7 +34,8 @@ public sealed class Worker : BackgroundService
             {
                 await connection.OpenAsync(stoppingToken);
 
-                await using var transaction = await connection.BeginTransactionAsync(stoppingToken);
+                await using var transaction = await connection.BeginTransactionAsync(
+                    IsolationLevel.ReadCommitted, stoppingToken);
 
                 await _producer.ProduceAsync(
                     new SampleTextModel($"Message #{messageId}"),

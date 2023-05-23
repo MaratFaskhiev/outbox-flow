@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OutboxFlow.Abstractions;
+using OutboxFlow.Consume;
 using OutboxFlow.Produce;
 
 namespace OutboxFlow.Configuration;
@@ -8,7 +9,7 @@ namespace OutboxFlow.Configuration;
 /// <summary>
 /// Builds outbox pipelines.
 /// </summary>
-public sealed class Builder
+public sealed class OutboxBuilder
 {
     private Action<IServiceProvider, ConsumerBuilder>? _consumerConfigureAction;
     private Action<IServiceProvider, ProducerBuilder>? _producerConfigureAction;
@@ -17,7 +18,7 @@ public sealed class Builder
     /// Configures outbox produce pipelines.
     /// </summary>
     /// <param name="configure">Configure action.</param>
-    public Builder AddProducer(Action<IServiceProvider, ProducerBuilder> configure)
+    public OutboxBuilder AddProducer(Action<IServiceProvider, ProducerBuilder> configure)
     {
         if (_producerConfigureAction != null)
             throw new InvalidOperationException("An outbox producer is already configured.");
@@ -29,7 +30,7 @@ public sealed class Builder
     /// Configures outbox consume pipelines.
     /// </summary>
     /// <param name="configure">Configure action.</param>
-    public Builder AddConsumer(Action<IServiceProvider, ConsumerBuilder> configure)
+    public OutboxBuilder AddConsumer(Action<IServiceProvider, ConsumerBuilder> configure)
     {
         if (_consumerConfigureAction != null)
             throw new InvalidOperationException("An outbox consumer is already configured.");
@@ -49,6 +50,7 @@ public sealed class Builder
 
     private static void BuildConsumer(IServiceCollection services)
     {
+        services.AddHostedService<OutboxStorageConsumer>();
     }
 
     private void BuildProducer(IServiceCollection services)
