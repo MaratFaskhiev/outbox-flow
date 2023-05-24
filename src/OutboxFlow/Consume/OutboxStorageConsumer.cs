@@ -1,5 +1,4 @@
-﻿using System.Data;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,6 +12,7 @@ namespace OutboxFlow.Consume;
 /// </summary>
 public sealed class OutboxStorageConsumer : BackgroundService
 {
+    private readonly IPipelineStep<IConsumeContext, IOutboxMessage> _consumePipeline;
     private readonly ILogger<OutboxStorageConsumer> _logger;
     private readonly IOptionsMonitor<OutboxStorageConsumerOptions> _options;
     private readonly IOutboxStorage _outboxStorage;
@@ -22,16 +22,19 @@ public sealed class OutboxStorageConsumer : BackgroundService
     /// Ctor.
     /// </summary>
     /// <param name="outboxStorage">Outbox storage.</param>
+    /// <param name="consumePipeline">Consume pipeline.</param>
     /// <param name="serviceScopeFactory">Service scope factory.</param>
     /// <param name="options">Configuration options.</param>
     /// <param name="logger">Logger.</param>
     public OutboxStorageConsumer(
         IOutboxStorage outboxStorage,
+        IPipelineStep<IConsumeContext, IOutboxMessage> consumePipeline,
         IServiceScopeFactory serviceScopeFactory,
         IOptionsMonitor<OutboxStorageConsumerOptions> options,
         ILogger<OutboxStorageConsumer> logger)
     {
         _outboxStorage = outboxStorage;
+        _consumePipeline = consumePipeline;
         _options = options;
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
@@ -80,7 +83,7 @@ public sealed class OutboxStorageConsumer : BackgroundService
         // TODO: add lock capabilities.
 
         IReadOnlyCollection<IOutboxMessage> messages;
-        using (var transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
+        using (var transaction = connection.BeginTransaction(_options.CurrentValue.IsolationLevel))
         {
             messages = await _outboxStorage.FetchAsync(
                 _options.CurrentValue.BatchSize,
@@ -93,12 +96,20 @@ public sealed class OutboxStorageConsumer : BackgroundService
 
         _logger.LogDebug("Fetched {Count} messages.", messages.Count);
 
-        // Deliver messages.
-        await Task.Delay(1, stoppingToken).ConfigureAwait(false);
+        foreach (var message in messages)
+        {
+            var context = new ConsumeContext(
+                message.Destination,
+                message.Key,
+                message.Value,
+                serviceScope.ServiceProvider,
+                stoppingToken);
+            await _consumePipeline.InvokeAsync(message, context).ConfigureAwait(false);
+        }
 
         _logger.LogDebug("Delivered {Count} messages.", messages.Count);
 
-        using (var transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
+        using (var transaction = connection.BeginTransaction(_options.CurrentValue.IsolationLevel))
         {
             await _outboxStorage.DeleteAsync(
                 messages,

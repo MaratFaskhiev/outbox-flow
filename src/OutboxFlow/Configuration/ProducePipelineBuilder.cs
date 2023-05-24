@@ -1,5 +1,5 @@
 ﻿using OutboxFlow.Abstractions;
-using OutboxFlow.Produce;
+using OutboxFlow.Pipelines;
 
 namespace OutboxFlow.Configuration;
 
@@ -7,14 +7,14 @@ namespace OutboxFlow.Configuration;
 /// Outbox produce pipeline builder.
 /// </summary>
 /// <typeparam name="T">Message type to produce.</typeparam>
-public sealed class ProducePipelineBuilder<T> : IProducePipelineStepBuilder<T>
+public sealed class ProducePipelineBuilder<T> : IPipelineStepBuilder<IProduceContext, T>
 {
-    private IProducePipelineStepBuilder<T>? _step;
+    private IPipelineStepBuilder<IProduceContext, T>? _step;
 
     /// <inheritdoc />
-    public IProducePipelineStep<T> Build()
+    public IPipelineStep<IProduceContext, T> Build()
     {
-        return new ProducePipeline<T>(_step?.Build());
+        return new Pipeline<IProduceContext, T>(_step?.Build());
     }
 
     /// <summary>

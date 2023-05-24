@@ -9,5 +9,5 @@ public interface IProducePipelineRegistry
     /// Gets the pipeline by the message type.
     /// </summary>
     /// <typeparam name="T">Message type.</typeparam>
-    IProducePipelineStep<T> GetPipeline<T>();
+    IPipelineStep<IProduceContext, T> GetPipeline<T>();
 }

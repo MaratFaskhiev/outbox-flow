@@ -1,26 +1,27 @@
 ﻿using OutboxFlow.Abstractions;
 
-namespace OutboxFlow.Produce;
+namespace OutboxFlow.Pipelines;
 
 /// <summary>
-/// Outbox produce pipeline step.
+/// Outbox pipeline step.
 /// </summary>
+/// <typeparam name="TContext">Context type.</typeparam>
 /// <typeparam name="TIn">Input parameter type.</typeparam>
 /// <typeparam name="TOut">Output parameter type.</typeparam>
-public sealed class ProducePipelineStep<TIn, TOut> : IProducePipelineStep<TIn>
+public sealed class PipelineStep<TContext, TIn, TOut> : IPipelineStep<TContext, TIn>
 {
-    private readonly Func<TIn, IProduceContext, ValueTask<TOut>>? _action;
-    private readonly IProducePipelineStep<TOut>? _nextStep;
-    private readonly Func<TIn, IProduceContext, TOut>? _syncAction;
+    private readonly Func<TIn, TContext, ValueTask<TOut>>? _action;
+    private readonly IPipelineStep<TContext, TOut>? _nextStep;
+    private readonly Func<TIn, TContext, TOut>? _syncAction;
 
     /// <summary>
     /// Ctor.
     /// </summary>
     /// <param name="action">Pipeline action.</param>
     /// <param name="nextStep">Next step.</param>
-    public ProducePipelineStep(
-        Func<TIn, IProduceContext, ValueTask<TOut>> action,
-        IProducePipelineStep<TOut>? nextStep)
+    public PipelineStep(
+        Func<TIn, TContext, ValueTask<TOut>> action,
+        IPipelineStep<TContext, TOut>? nextStep)
     {
         _action = action;
         _nextStep = nextStep;
@@ -31,16 +32,16 @@ public sealed class ProducePipelineStep<TIn, TOut> : IProducePipelineStep<TIn>
     /// </summary>
     /// <param name="action">Pipeline action.</param>
     /// <param name="nextStep">Next step.</param>
-    public ProducePipelineStep(
-        Func<TIn, IProduceContext, TOut> action,
-        IProducePipelineStep<TOut>? nextStep)
+    public PipelineStep(
+        Func<TIn, TContext, TOut> action,
+        IPipelineStep<TContext, TOut>? nextStep)
     {
         _syncAction = action;
         _nextStep = nextStep;
     }
 
     /// <inheritdoc />
-    public async ValueTask InvokeAsync(TIn message, IProduceContext context)
+    public async ValueTask InvokeAsync(TIn message, TContext context)
     {
         var result = _action != null
             ? await _action.Invoke(message, context).ConfigureAwait(false)

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.Data;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -44,33 +45,47 @@ public static class Program
             .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
             .AddOutbox(outboxBuilder =>
                 outboxBuilder
-                    .AddProducer((sp, producer) =>
-                    {
-                        var logger = sp.GetRequiredService<ILogger<IProducer>>();
-                        producer
-                            .ForMessage<SampleTextModel>(pipeline =>
-                                pipeline
-                                    .AddSyncStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
-                                    .AddStep(async (message, _) =>
+                    .AddProducer(producer => producer
+                        .ForMessage<SampleTextModel>(pipeline =>
+                            pipeline
+                                .AddSyncStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
+                                .AddStep(async (message, ctx) =>
+                                {
+                                    var logger = ctx.ServiceProvider.GetRequiredService<ILogger<IProducer>>();
+
+                                    // some async work
+                                    await Task.Delay(1, ctx.CancellationToken);
+
+                                    var protoModel = new Protos.SampleTextModel
                                     {
-                                        // some async work
-                                        await Task.Delay(1);
+                                        Value = message.Value
+                                    };
 
-                                        var protoModel = new Protos.SampleTextModel
-                                        {
-                                            Value = message.Value
-                                        };
+                                    logger.LogInformation("Message is converted.");
 
-                                        logger.LogInformation("Message is converted.");
+                                    return protoModel;
+                                })
+                                .SerializeToProtobuf()
+                                .SetDestination("topic")
+                                .Save()
+                        )
+                    )
+                    .AddConsumer(consumer =>
+                    {
+                        consumer.IsolationLevel = IsolationLevel.Serializable;
+                        consumer.AddStep(async (message, ctx) =>
+                        {
+                            var logger = ctx.ServiceProvider
+                                .GetRequiredService<ILogger<IPipelineStep<IConsumeContext, IOutboxMessage>>>();
 
-                                        return protoModel;
-                                    })
-                                    .SerializeToProtobuf()
-                                    .SetDestination("topic")
-                                    .Save()
-                            );
-                    })
-                    .AddConsumer((sp, consumerBuilder) => { }));
+                            // some async work
+                            await Task.Delay(1, ctx.CancellationToken);
+
+                            logger.LogInformation("Message is delivered.");
+
+                            return message;
+                        });
+                    }));
 
         services.AddHostedService<Worker>();
 

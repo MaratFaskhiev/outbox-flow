@@ -10,7 +10,7 @@ public interface IConsumeContext
     /// <summary>
     /// Gets the destination.
     /// </summary>
-    public string Destination { get; }
+    public string? Destination { get; }
 
     /// <summary>
     /// Gets the message key.

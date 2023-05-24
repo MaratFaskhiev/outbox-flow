@@ -5,7 +5,7 @@ using OutboxFlow.Abstractions;
 namespace OutboxFlow.Postgres;
 
 /// <summary>
-/// <see cref="IDbConnectionFactory"/> implementation which uses static connection string.
+/// <see cref="IDbConnectionFactory" /> implementation which uses static connection string.
 /// </summary>
 public sealed class DefaultDbConnectionFactory : IDbConnectionFactory
 {

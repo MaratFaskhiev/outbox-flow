@@ -1,5 +1,5 @@
 ﻿using OutboxFlow.Abstractions;
-using OutboxFlow.Produce;
+using OutboxFlow.Pipelines;
 
 namespace OutboxFlow.Configuration;
 
@@ -8,11 +8,11 @@ namespace OutboxFlow.Configuration;
 /// </summary>
 /// <typeparam name="TIn">Input parameter type.</typeparam>
 /// <typeparam name="TOut">Output parameter type.</typeparam>
-public sealed class ProducePipelineStepBuilder<TIn, TOut> : IProducePipelineStepBuilder<TIn>
+public sealed class ProducePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder<IProduceContext, TIn>
 {
     private readonly Func<TIn, IProduceContext, ValueTask<TOut>>? _action;
     private readonly Func<TIn, IProduceContext, TOut>? _syncAction;
-    private IProducePipelineStepBuilder<TOut>? _nextStep;
+    private IPipelineStepBuilder<IProduceContext, TOut>? _nextStep;
 
     /// <summary>
     /// Ctor.
@@ -33,11 +33,11 @@ public sealed class ProducePipelineStepBuilder<TIn, TOut> : IProducePipelineStep
     }
 
     /// <inheritdoc />
-    public IProducePipelineStep<TIn> Build()
+    public IPipelineStep<IProduceContext, TIn> Build()
     {
         return _action != null
-            ? new ProducePipelineStep<TIn, TOut>(_action, _nextStep?.Build())
-            : new ProducePipelineStep<TIn, TOut>(_syncAction!, _nextStep?.Build());
+            ? new PipelineStep<IProduceContext, TIn, TOut>(_action, _nextStep?.Build())
+            : new PipelineStep<IProduceContext, TIn, TOut>(_syncAction!, _nextStep?.Build());
     }
 
     /// <summary>

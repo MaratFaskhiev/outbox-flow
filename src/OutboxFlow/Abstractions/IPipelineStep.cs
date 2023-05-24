@@ -1,15 +1,16 @@
 ﻿namespace OutboxFlow.Abstractions;
 
 /// <summary>
-/// Represents a produce pipeline step.
+/// Represents a pipeline step.
 /// </summary>
+/// <typeparam name="TContext">Context type.</typeparam>
 /// <typeparam name="T">Input message type.</typeparam>
-public interface IProducePipelineStep<T>
+public interface IPipelineStep<TContext, T>
 {
     /// <summary>
     /// Invokes a pipeline step.
     /// </summary>
     /// <param name="message">Message.</param>
-    /// <param name="context">Produce context.</param>
-    ValueTask InvokeAsync(T message, IProduceContext context);
+    /// <param name="context">Context.</param>
+    ValueTask InvokeAsync(T message, TContext context);
 }

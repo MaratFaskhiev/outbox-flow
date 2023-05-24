@@ -11,14 +11,14 @@ namespace OutboxFlow.Configuration;
 /// </summary>
 public sealed class OutboxBuilder
 {
-    private Action<IServiceProvider, ConsumerBuilder>? _consumerConfigureAction;
-    private Action<IServiceProvider, ProducerBuilder>? _producerConfigureAction;
+    private Action<ConsumerBuilder>? _consumerConfigureAction;
+    private Action<ProducerBuilder>? _producerConfigureAction;
 
     /// <summary>
     /// Configures outbox produce pipelines.
     /// </summary>
     /// <param name="configure">Configure action.</param>
-    public OutboxBuilder AddProducer(Action<IServiceProvider, ProducerBuilder> configure)
+    public OutboxBuilder AddProducer(Action<ProducerBuilder> configure)
     {
         if (_producerConfigureAction != null)
             throw new InvalidOperationException("An outbox producer is already configured.");
@@ -30,7 +30,7 @@ public sealed class OutboxBuilder
     /// Configures outbox consume pipelines.
     /// </summary>
     /// <param name="configure">Configure action.</param>
-    public OutboxBuilder AddConsumer(Action<IServiceProvider, ConsumerBuilder> configure)
+    public OutboxBuilder AddConsumer(Action<ConsumerBuilder> configure)
     {
         if (_consumerConfigureAction != null)
             throw new InvalidOperationException("An outbox consumer is already configured.");
@@ -48,8 +48,22 @@ public sealed class OutboxBuilder
         BuildConsumer(services);
     }
 
-    private static void BuildConsumer(IServiceCollection services)
+    private void BuildConsumer(IServiceCollection services)
     {
+        if (_consumerConfigureAction == null) return;
+
+        var consumerBuilder = new ConsumerBuilder();
+        _consumerConfigureAction(consumerBuilder);
+
+        services.AddOptions<OutboxStorageConsumerOptions>().Configure(options =>
+        {
+            options.IsolationLevel = consumerBuilder.IsolationLevel;
+            options.BatchSize = consumerBuilder.BatchSize;
+            options.ConsumeDelay = consumerBuilder.ConsumeDelay;
+        });
+
+        services.TryAddSingleton(consumerBuilder.Build());
+
         services.AddHostedService<OutboxStorageConsumer>();
     }
 
@@ -57,13 +71,9 @@ public sealed class OutboxBuilder
     {
         if (_producerConfigureAction == null) return;
 
-        services.TryAddSingleton(sp =>
-        {
-            var builder = new ProducerBuilder();
-            _producerConfigureAction(sp, builder);
-            return builder.BuildRegistry();
-        });
-
+        var builder = new ProducerBuilder();
+        _producerConfigureAction(builder);
+        services.TryAddSingleton(builder.BuildRegistry());
         services.TryAddScoped<IProducer, Producer>();
     }
 }
