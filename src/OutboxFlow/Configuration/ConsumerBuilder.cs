@@ -1,15 +1,23 @@
 ﻿using System.Data;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using OutboxFlow.Abstractions;
+using OutboxFlow.Consume;
 using OutboxFlow.Pipelines;
 
 namespace OutboxFlow.Configuration;
 
 /// <summary>
-/// Builds an outbox consume pipeline.
+/// Builds an outbox consumer.
 /// </summary>
-public sealed class ConsumerBuilder : IPipelineStepBuilder<IConsumeContext, IOutboxMessage>
+public sealed class ConsumerBuilder
 {
     private IPipelineStepBuilder<IConsumeContext, IOutboxMessage>? _step;
+
+    /// <summary>
+    /// Gets or sets the registrar to register an outbox storage.
+    /// </summary>
+    public IOutboxStorageRegistrar? OutboxStorageRegistrar { get; set; }
 
     /// <summary>
     /// Gets or sets the amount of messages to consume.
@@ -27,11 +35,27 @@ public sealed class ConsumerBuilder : IPipelineStepBuilder<IConsumeContext, IOut
     public IsolationLevel IsolationLevel { get; set; } = IsolationLevel.RepeatableRead;
 
     /// <summary>
-    /// Builds a consume pipeline.
+    /// Builds an outbox consumer.
     /// </summary>
-    public IPipelineStep<IConsumeContext, IOutboxMessage> Build()
+    /// <param name="services">Collection of service descriptors.</param>
+    public void Build(IServiceCollection services)
     {
-        return new Pipeline<IConsumeContext, IOutboxMessage>(_step?.Build());
+        if (OutboxStorageRegistrar == null)
+            throw new InvalidOperationException("The outbox storage registrar must be configured.");
+
+        services.AddOptions<OutboxStorageConsumerOptions>().Configure(options =>
+        {
+            options.IsolationLevel = IsolationLevel;
+            options.BatchSize = BatchSize;
+            options.ConsumeDelay = ConsumeDelay;
+        });
+
+        var pipeline = new Pipeline<IConsumeContext, IOutboxMessage>(_step?.Build());
+        services.TryAddSingleton<IPipelineStep<IConsumeContext, IOutboxMessage>>(pipeline);
+
+        services.AddHostedService<OutboxConsumer>();
+
+        OutboxStorageRegistrar.Register(services);
     }
 
     /// <summary>

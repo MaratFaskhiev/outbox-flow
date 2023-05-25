@@ -1,4 +1,6 @@
-﻿using OutboxFlow.Abstractions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using OutboxFlow.Abstractions;
 using OutboxFlow.Produce;
 
 namespace OutboxFlow.Configuration;
@@ -9,6 +11,11 @@ namespace OutboxFlow.Configuration;
 public sealed class ProducerBuilder
 {
     private readonly Dictionary<Type, object> _messagePipelines = new();
+
+    /// <summary>
+    /// Gets or sets the registrar to register an outbox storage.
+    /// </summary>
+    public IOutboxStorageRegistrar? OutboxStorageRegistrar { get; set; }
 
     /// <summary>
     /// Configures produce pipeline for the specified message type.
@@ -29,10 +36,18 @@ public sealed class ProducerBuilder
     }
 
     /// <summary>
-    /// Builds a pipeline registry.
+    /// Builds an outbox producer.
     /// </summary>
-    public IProducePipelineRegistry BuildRegistry()
+    /// <param name="services">Collection of service descriptors.</param>
+    public void Build(IServiceCollection services)
     {
-        return new ProducePipelineRegistry(_messagePipelines);
+        if (OutboxStorageRegistrar == null)
+            throw new InvalidOperationException("The outbox storage registrar must be configured.");
+
+        var registry = new ProducePipelineRegistry(_messagePipelines);
+        services.TryAddSingleton<IProducePipelineRegistry>(registry);
+        services.TryAddScoped<IProducer, Producer>();
+
+        OutboxStorageRegistrar.Register(services);
     }
 }

@@ -10,10 +10,10 @@ namespace OutboxFlow.Consume;
 /// <summary>
 /// Consumes stored outbox messages.
 /// </summary>
-public sealed class OutboxStorageConsumer : BackgroundService
+public sealed class OutboxConsumer : BackgroundService
 {
     private readonly IPipelineStep<IConsumeContext, IOutboxMessage> _consumePipeline;
-    private readonly ILogger<OutboxStorageConsumer> _logger;
+    private readonly ILogger<OutboxConsumer> _logger;
     private readonly IOptionsMonitor<OutboxStorageConsumerOptions> _options;
     private readonly IOutboxStorage _outboxStorage;
     private readonly IServiceScopeFactory _serviceScopeFactory;
@@ -26,12 +26,12 @@ public sealed class OutboxStorageConsumer : BackgroundService
     /// <param name="serviceScopeFactory">Service scope factory.</param>
     /// <param name="options">Configuration options.</param>
     /// <param name="logger">Logger.</param>
-    public OutboxStorageConsumer(
+    public OutboxConsumer(
         IOutboxStorage outboxStorage,
         IPipelineStep<IConsumeContext, IOutboxMessage> consumePipeline,
         IServiceScopeFactory serviceScopeFactory,
         IOptionsMonitor<OutboxStorageConsumerOptions> options,
-        ILogger<OutboxStorageConsumer> logger)
+        ILogger<OutboxConsumer> logger)
     {
         _outboxStorage = outboxStorage;
         _consumePipeline = consumePipeline;

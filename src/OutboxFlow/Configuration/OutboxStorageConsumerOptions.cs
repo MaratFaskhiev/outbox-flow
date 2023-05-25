@@ -4,7 +4,7 @@ using OutboxFlow.Consume;
 namespace OutboxFlow.Configuration;
 
 /// <summary>
-/// Configuration options for the <see cref="OutboxStorageConsumer" />.
+/// Configuration options for the <see cref="OutboxConsumer" />.
 /// </summary>
 public sealed class OutboxStorageConsumerOptions
 {

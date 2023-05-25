@@ -1,8 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using OutboxFlow.Abstractions;
-using OutboxFlow.Consume;
-using OutboxFlow.Produce;
 
 namespace OutboxFlow.Configuration;
 
@@ -52,19 +48,9 @@ public sealed class OutboxBuilder
     {
         if (_consumerConfigureAction == null) return;
 
-        var consumerBuilder = new ConsumerBuilder();
-        _consumerConfigureAction(consumerBuilder);
-
-        services.AddOptions<OutboxStorageConsumerOptions>().Configure(options =>
-        {
-            options.IsolationLevel = consumerBuilder.IsolationLevel;
-            options.BatchSize = consumerBuilder.BatchSize;
-            options.ConsumeDelay = consumerBuilder.ConsumeDelay;
-        });
-
-        services.TryAddSingleton(consumerBuilder.Build());
-
-        services.AddHostedService<OutboxStorageConsumer>();
+        var builder = new ConsumerBuilder();
+        _consumerConfigureAction(builder);
+        builder.Build(services);
     }
 
     private void BuildProducer(IServiceCollection services)
@@ -73,7 +59,6 @@ public sealed class OutboxBuilder
 
         var builder = new ProducerBuilder();
         _producerConfigureAction(builder);
-        services.TryAddSingleton(builder.BuildRegistry());
-        services.TryAddScoped<IProducer, Producer>();
+        builder.Build(services);
     }
 }

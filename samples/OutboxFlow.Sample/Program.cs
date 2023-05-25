@@ -42,10 +42,10 @@ public static class Program
         services.AddLogging(cfg => cfg.AddConsole());
 
         services
-            .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
             .AddOutbox(outboxBuilder =>
                 outboxBuilder
                     .AddProducer(producer => producer
+                        .UsePostgres()
                         .ForMessage<SampleTextModel>(pipeline =>
                             pipeline
                                 .AddSyncStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
@@ -73,18 +73,20 @@ public static class Program
                     .AddConsumer(consumer =>
                     {
                         consumer.IsolationLevel = IsolationLevel.Serializable;
-                        consumer.AddStep(async (message, ctx) =>
-                        {
-                            var logger = ctx.ServiceProvider
-                                .GetRequiredService<ILogger<IPipelineStep<IConsumeContext, IOutboxMessage>>>();
+                        consumer
+                            .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
+                            .AddStep(async (message, ctx) =>
+                            {
+                                var logger = ctx.ServiceProvider
+                                    .GetRequiredService<ILogger<IPipelineStep<IConsumeContext, IOutboxMessage>>>();
 
-                            // some async work
-                            await Task.Delay(1, ctx.CancellationToken);
+                                // some async work
+                                await Task.Delay(1, ctx.CancellationToken);
 
-                            logger.LogInformation("Message is delivered.");
+                                logger.LogInformation("Message is delivered.");
 
-                            return message;
-                        });
+                                return message;
+                            });
                     }));
 
         services.AddHostedService<Worker>();
