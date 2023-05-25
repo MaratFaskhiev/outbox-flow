@@ -75,18 +75,19 @@ public static class Program
                         consumer.IsolationLevel = IsolationLevel.Serializable;
                         consumer
                             .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
-                            .AddStep(async (message, ctx) =>
-                            {
-                                var logger = ctx.ServiceProvider
-                                    .GetRequiredService<ILogger<IPipelineStep<IConsumeContext, IOutboxMessage>>>();
+                            .Default(pipeline => pipeline
+                                .AddStep(async (message, ctx) =>
+                                {
+                                    var logger = ctx.ServiceProvider
+                                        .GetRequiredService<ILogger<IPipelineStep<IConsumeContext, IOutboxMessage>>>();
 
-                                // some async work
-                                await Task.Delay(1, ctx.CancellationToken);
+                                    // some async work
+                                    await Task.Delay(1, ctx.CancellationToken);
 
-                                logger.LogInformation("Message is delivered.");
+                                    logger.LogInformation("Message is delivered.");
 
-                                return message;
-                            });
+                                    return message;
+                                }));
                     }));
 
         services.AddHostedService<Worker>();

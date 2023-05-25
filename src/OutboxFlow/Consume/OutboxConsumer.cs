@@ -12,29 +12,29 @@ namespace OutboxFlow.Consume;
 /// </summary>
 public sealed class OutboxConsumer : BackgroundService
 {
-    private readonly IPipelineStep<IConsumeContext, IOutboxMessage> _consumePipeline;
     private readonly ILogger<OutboxConsumer> _logger;
     private readonly IOptionsMonitor<OutboxStorageConsumerOptions> _options;
     private readonly IOutboxStorage _outboxStorage;
+    private readonly IConsumePipelineRegistry _registry;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
     /// <summary>
     /// Ctor.
     /// </summary>
     /// <param name="outboxStorage">Outbox storage.</param>
-    /// <param name="consumePipeline">Consume pipeline.</param>
+    /// <param name="registry">Consume pipeline registry.</param>
     /// <param name="serviceScopeFactory">Service scope factory.</param>
     /// <param name="options">Configuration options.</param>
     /// <param name="logger">Logger.</param>
     public OutboxConsumer(
         IOutboxStorage outboxStorage,
-        IPipelineStep<IConsumeContext, IOutboxMessage> consumePipeline,
+        IConsumePipelineRegistry registry,
         IServiceScopeFactory serviceScopeFactory,
         IOptionsMonitor<OutboxStorageConsumerOptions> options,
         ILogger<OutboxConsumer> logger)
     {
         _outboxStorage = outboxStorage;
-        _consumePipeline = consumePipeline;
+        _registry = registry;
         _options = options;
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
@@ -104,7 +104,9 @@ public sealed class OutboxConsumer : BackgroundService
                 message.Value,
                 serviceScope.ServiceProvider,
                 stoppingToken);
-            await _consumePipeline.InvokeAsync(message, context).ConfigureAwait(false);
+
+            var consumePipeline = _registry.GetPipeline(message.Destination);
+            await consumePipeline.InvokeAsync(message, context).ConfigureAwait(false);
         }
 
         _logger.LogDebug("Delivered {Count} messages.", messages.Count);

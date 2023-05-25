@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OutboxFlow.Abstractions;
 using OutboxFlow.Consume;
-using OutboxFlow.Pipelines;
 
 namespace OutboxFlow.Configuration;
 
@@ -12,7 +11,10 @@ namespace OutboxFlow.Configuration;
 /// </summary>
 public sealed class ConsumerBuilder
 {
-    private IPipelineStepBuilder<IConsumeContext, IOutboxMessage>? _step;
+    private readonly Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>> _destinationPipelines
+        = new(StringComparer.OrdinalIgnoreCase);
+
+    private IPipelineStep<IConsumeContext, IOutboxMessage>? _defaultPipeline;
 
     /// <summary>
     /// Gets or sets the registrar to register an outbox storage.
@@ -35,6 +37,41 @@ public sealed class ConsumerBuilder
     public IsolationLevel IsolationLevel { get; set; } = IsolationLevel.RepeatableRead;
 
     /// <summary>
+    /// Configures the default consume pipeline.
+    /// </summary>
+    /// <param name="configure">Configure action.</param>
+    public ConsumerBuilder Default(Action<ConsumePipelineBuilder> configure)
+    {
+        if (_defaultPipeline != null)
+            throw new InvalidOperationException(
+                "Default consume pipeline is already registered.");
+
+        var pipelineBuilder = new ConsumePipelineBuilder();
+        configure(pipelineBuilder);
+        _defaultPipeline = pipelineBuilder.Build();
+
+        return this;
+    }
+
+    /// <summary>
+    /// Configures consume pipeline for the specified destination.
+    /// </summary>
+    /// <param name="destination">Destination.</param>
+    /// <param name="configure">Configure action.</param>
+    public ConsumerBuilder ForDestination(string destination, Action<ConsumePipelineBuilder> configure)
+    {
+        if (_destinationPipelines.ContainsKey(destination))
+            throw new InvalidOperationException(
+                $"Consume pipeline for the destination \"{destination}\" is already registered.");
+
+        var pipelineBuilder = new ConsumePipelineBuilder();
+        configure(pipelineBuilder);
+        _destinationPipelines.Add(destination, pipelineBuilder.Build());
+
+        return this;
+    }
+
+    /// <summary>
     /// Builds an outbox consumer.
     /// </summary>
     /// <param name="services">Collection of service descriptors.</param>
@@ -50,41 +87,11 @@ public sealed class ConsumerBuilder
             options.ConsumeDelay = ConsumeDelay;
         });
 
-        var pipeline = new Pipeline<IConsumeContext, IOutboxMessage>(_step?.Build());
-        services.TryAddSingleton<IPipelineStep<IConsumeContext, IOutboxMessage>>(pipeline);
+        var registry = new ConsumePipelineRegistry(_destinationPipelines, _defaultPipeline);
+        services.TryAddSingleton<IConsumePipelineRegistry>(registry);
 
         services.AddHostedService<OutboxConsumer>();
 
         OutboxStorageRegistrar.Register(services);
-    }
-
-    /// <summary>
-    /// Adds the first step to the pipeline.
-    /// </summary>
-    /// <param name="action">Step.</param>
-    /// <typeparam name="TOut">Output parameter type.</typeparam>
-    public ConsumePipelineStepBuilder<IOutboxMessage, TOut> AddStep<TOut>(
-        Func<IOutboxMessage, IConsumeContext, ValueTask<TOut>> action)
-    {
-        if (_step != null) throw new InvalidOperationException("The first step is already added.");
-
-        var step = new ConsumePipelineStepBuilder<IOutboxMessage, TOut>(action);
-        _step = step;
-        return step;
-    }
-
-    /// <summary>
-    /// Adds the first step to the pipeline.
-    /// </summary>
-    /// <param name="action">Step.</param>
-    /// <typeparam name="TOut">Output parameter type.</typeparam>
-    public ConsumePipelineStepBuilder<IOutboxMessage, TOut> AddSyncStep<TOut>(
-        Func<IOutboxMessage, IConsumeContext, TOut> action)
-    {
-        if (_step != null) throw new InvalidOperationException("The first step is already added.");
-
-        var step = new ConsumePipelineStepBuilder<IOutboxMessage, TOut>(action);
-        _step = step;
-        return step;
     }
 }
