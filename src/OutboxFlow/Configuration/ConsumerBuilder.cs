@@ -34,7 +34,12 @@ public sealed class ConsumerBuilder
     /// <summary>
     /// Gets or sets the transaction isolation level.
     /// </summary>
-    public IsolationLevel IsolationLevel { get; set; } = IsolationLevel.RepeatableRead;
+    public IsolationLevel IsolationLevel { get; set; } = IsolationLevel.ReadCommitted;
+
+    /// <summary>
+    /// Get or sets the consume operation timeout.
+    /// </summary>
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
     /// Configures the default consume pipeline.
@@ -85,12 +90,13 @@ public sealed class ConsumerBuilder
             options.IsolationLevel = IsolationLevel;
             options.BatchSize = BatchSize;
             options.ConsumeDelay = ConsumeDelay;
+            options.Timeout = Timeout;
         });
 
         var registry = new ConsumePipelineRegistry(_destinationPipelines, _defaultPipeline);
         services.TryAddSingleton<IConsumePipelineRegistry>(registry);
-
-        services.AddHostedService<OutboxConsumer>();
+        services.TryAddScoped<IOutboxConsumer, OutboxConsumer>();
+        services.AddHostedService<OutboxConsumerService>();
 
         OutboxStorageRegistrar.Register(services);
     }

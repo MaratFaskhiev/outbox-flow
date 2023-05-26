@@ -32,9 +32,7 @@ where id = any(@ids);";
         if (batchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size should be greater than zero.");
 
-        var connection = transaction.Connection as NpgsqlConnection;
-        if (connection == null)
-            throw new InvalidOperationException("Connection must be defined.");
+        var connection = EnsureConnection(transaction);
 
         var command = connection.CreateCommand();
         await using (command.ConfigureAwait(false))
@@ -85,9 +83,7 @@ where id = any(@ids);";
 
         if (context.Value == null) throw new InvalidOperationException("Value must be defined.");
 
-        var connection = context.Transaction.Connection as NpgsqlConnection;
-        if (connection == null)
-            throw new InvalidOperationException("Connection must be defined.");
+        var connection = EnsureConnection(context.Transaction);
 
         var command = connection.CreateCommand();
         await using (command.ConfigureAwait(false))
@@ -107,9 +103,7 @@ where id = any(@ids);";
     public async ValueTask DeleteAsync(IReadOnlyCollection<IOutboxMessage> outboxMessages, IDbTransaction transaction,
         CancellationToken cancellationToken = default)
     {
-        var connection = transaction.Connection as NpgsqlConnection;
-        if (connection == null)
-            throw new InvalidOperationException("Connection must be defined.");
+        var connection = EnsureConnection(transaction);
 
         if (outboxMessages.Any(x => x is not OutboxMessage))
             throw new InvalidOperationException($"{typeof(OutboxMessage).FullName} expected.");
@@ -123,5 +117,13 @@ where id = any(@ids);";
 
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private static NpgsqlConnection EnsureConnection(IDbTransaction transaction)
+    {
+        var connection = transaction.Connection as NpgsqlConnection;
+        if (connection == null)
+            throw new InvalidOperationException("Connection must be defined.");
+        return connection;
     }
 }

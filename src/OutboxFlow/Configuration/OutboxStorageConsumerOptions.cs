@@ -4,7 +4,7 @@ using OutboxFlow.Consume;
 namespace OutboxFlow.Configuration;
 
 /// <summary>
-/// Configuration options for the <see cref="OutboxConsumer" />.
+/// Configuration options for the <see cref="OutboxConsumerService" />.
 /// </summary>
 public sealed class OutboxStorageConsumerOptions
 {
@@ -22,4 +22,9 @@ public sealed class OutboxStorageConsumerOptions
     /// Gets or sets the transaction isolation level.
     /// </summary>
     public IsolationLevel IsolationLevel { get; set; }
+
+    /// <summary>
+    /// Get or sets the consume operation timeout.
+    /// </summary>
+    public TimeSpan Timeout { get; set; }
 }

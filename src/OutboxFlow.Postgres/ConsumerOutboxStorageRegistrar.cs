@@ -28,6 +28,7 @@ public sealed class ConsumerOutboxStorageRegistrar : IOutboxStorageRegistrar
     public void Register(IServiceCollection services)
     {
         services.TryAddScoped<IOutboxStorage, OutboxStorage>();
+        services.TryAddScoped<IOutboxLockManager, OutboxLockManager>();
         services.TryAddSingleton<IDbConnectionFactory>(new DefaultDbConnectionFactory(_connectionString));
     }
 }
