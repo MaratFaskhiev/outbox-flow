@@ -6,46 +6,31 @@ using OutboxFlow.Consume;
 
 namespace OutboxFlow.Configuration;
 
-/// <summary>
-/// Builds an outbox consumer.
-/// </summary>
-public sealed class ConsumerBuilder
+/// <inheritdoc />
+public sealed class ConsumerBuilder : IConsumerBuilder
 {
     private readonly Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>> _destinationPipelines
         = new(StringComparer.OrdinalIgnoreCase);
 
     private IPipelineStep<IConsumeContext, IOutboxMessage>? _defaultPipeline;
 
-    /// <summary>
-    /// Gets or sets the registrar to register an outbox storage.
-    /// </summary>
+    /// <inheritdoc />
     public IOutboxStorageRegistrar? OutboxStorageRegistrar { get; set; }
 
-    /// <summary>
-    /// Gets or sets the amount of messages to consume.
-    /// </summary>
+    /// <inheritdoc />
     public int BatchSize { get; set; } = 128;
 
-    /// <summary>
-    /// Gets or sets the delay between each attempt to consume messages.
-    /// </summary>
+    /// <inheritdoc />
     public TimeSpan ConsumeDelay { get; set; } = TimeSpan.FromSeconds(5);
 
-    /// <summary>
-    /// Gets or sets the transaction isolation level.
-    /// </summary>
+    /// <inheritdoc />
     public IsolationLevel IsolationLevel { get; set; } = IsolationLevel.ReadCommitted;
 
-    /// <summary>
-    /// Get or sets the consume operation timeout.
-    /// </summary>
+    /// <inheritdoc />
     public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
 
-    /// <summary>
-    /// Configures the default consume pipeline.
-    /// </summary>
-    /// <param name="configure">Configure action.</param>
-    public ConsumerBuilder Default(Action<ConsumePipelineBuilder> configure)
+    /// <inheritdoc />
+    public IConsumerBuilder ByDefault(Action<IConsumePipelineBuilder> configure)
     {
         if (_defaultPipeline != null)
             throw new InvalidOperationException(
@@ -58,12 +43,8 @@ public sealed class ConsumerBuilder
         return this;
     }
 
-    /// <summary>
-    /// Configures consume pipeline for the specified destination.
-    /// </summary>
-    /// <param name="destination">Destination.</param>
-    /// <param name="configure">Configure action.</param>
-    public ConsumerBuilder ForDestination(string destination, Action<ConsumePipelineBuilder> configure)
+    /// <inheritdoc />
+    public IConsumerBuilder ForDestination(string destination, Action<IConsumePipelineBuilder> configure)
     {
         if (_destinationPipelines.ContainsKey(destination))
             throw new InvalidOperationException(
@@ -76,10 +57,7 @@ public sealed class ConsumerBuilder
         return this;
     }
 
-    /// <summary>
-    /// Builds an outbox consumer.
-    /// </summary>
-    /// <param name="services">Collection of service descriptors.</param>
+    /// <inheritdoc />
     public void Build(IServiceCollection services)
     {
         if (OutboxStorageRegistrar == null)

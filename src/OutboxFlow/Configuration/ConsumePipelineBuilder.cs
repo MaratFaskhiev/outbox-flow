@@ -3,10 +3,8 @@ using OutboxFlow.Pipelines;
 
 namespace OutboxFlow.Configuration;
 
-/// <summary>
-/// Outbox consume pipeline builder.
-/// </summary>
-public sealed class ConsumePipelineBuilder : IPipelineStepBuilder<IConsumeContext, IOutboxMessage>
+/// <inheritdoc />
+public sealed class ConsumePipelineBuilder : IConsumePipelineBuilder
 {
     private IPipelineStepBuilder<IConsumeContext, IOutboxMessage>? _step;
 
@@ -16,12 +14,8 @@ public sealed class ConsumePipelineBuilder : IPipelineStepBuilder<IConsumeContex
         return new Pipeline<IConsumeContext, IOutboxMessage>(_step?.Build());
     }
 
-    /// <summary>
-    /// Adds the first step to the pipeline.
-    /// </summary>
-    /// <param name="action">Step.</param>
-    /// <typeparam name="TOut">Output parameter type.</typeparam>
-    public ConsumePipelineStepBuilder<IOutboxMessage, TOut> AddStep<TOut>(
+    /// <inheritdoc />
+    public IConsumePipelineStepBuilder<IOutboxMessage, TOut> AddStep<TOut>(
         Func<IOutboxMessage, IConsumeContext, ValueTask<TOut>> action)
     {
         if (_step != null) throw new InvalidOperationException("The first step is already added.");
@@ -31,12 +25,8 @@ public sealed class ConsumePipelineBuilder : IPipelineStepBuilder<IConsumeContex
         return step;
     }
 
-    /// <summary>
-    /// Adds the first step to the pipeline.
-    /// </summary>
-    /// <param name="action">Step.</param>
-    /// <typeparam name="TOut">Output parameter type.</typeparam>
-    public ConsumePipelineStepBuilder<IOutboxMessage, TOut> AddSyncStep<TOut>(
+    /// <inheritdoc />
+    public IConsumePipelineStepBuilder<IOutboxMessage, TOut> AddSyncStep<TOut>(
         Func<IOutboxMessage, IConsumeContext, TOut> action)
     {
         if (_step != null) throw new InvalidOperationException("The first step is already added.");

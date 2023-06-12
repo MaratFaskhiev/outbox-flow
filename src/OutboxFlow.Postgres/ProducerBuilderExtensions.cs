@@ -11,7 +11,7 @@ public static class ProducerBuilderExtensions
     /// Configures the producer to use an outbox storage based on PostgreSQL.
     /// </summary>
     /// <param name="builder">Outbox producer builder.</param>
-    public static ProducerBuilder UsePostgres(this ProducerBuilder builder)
+    public static IProducerBuilder UsePostgres(this IProducerBuilder builder)
     {
         builder.OutboxStorageRegistrar = new ProducerOutboxStorageRegistrar();
 

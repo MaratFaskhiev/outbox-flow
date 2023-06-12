@@ -6,11 +6,11 @@ namespace OutboxFlow.Configuration;
 /// Represents a pipeline step builder.
 /// </summary>
 /// <typeparam name="TContext">Context type.</typeparam>
-/// <typeparam name="T">Input message type.</typeparam>
-public interface IPipelineStepBuilder<TContext, T>
+/// <typeparam name="TIn">Input message type.</typeparam>
+public interface IPipelineStepBuilder<TContext, TIn>
 {
     /// <summary>
     /// Builds a produce pipeline step.
     /// </summary>
-    IPipelineStep<TContext, T> Build();
+    IPipelineStep<TContext, TIn> Build();
 }

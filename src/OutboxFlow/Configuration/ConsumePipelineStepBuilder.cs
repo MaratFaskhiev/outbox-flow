@@ -8,7 +8,7 @@ namespace OutboxFlow.Configuration;
 /// </summary>
 /// <typeparam name="TIn">Input parameter type.</typeparam>
 /// <typeparam name="TOut">Output parameter type.</typeparam>
-public sealed class ConsumePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder<IConsumeContext, TIn>
+public sealed class ConsumePipelineStepBuilder<TIn, TOut> : IConsumePipelineStepBuilder<TIn, TOut>
 {
     private readonly Func<TIn, IConsumeContext, ValueTask<TOut>>? _action;
     private readonly Func<TIn, IConsumeContext, TOut>? _syncAction;
@@ -40,12 +40,8 @@ public sealed class ConsumePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder
             : new PipelineStep<IConsumeContext, TIn, TOut>(_syncAction!, _nextStep?.Build());
     }
 
-    /// <summary>
-    /// Adds a step to the pipeline.
-    /// </summary>
-    /// <param name="action">Step.</param>
-    /// <typeparam name="TNext">Output parameter type.</typeparam>
-    public ConsumePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
+    /// <inheritdoc />
+    public IConsumePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
         Func<TOut, IConsumeContext, ValueTask<TNext>> action)
     {
         var nextStep = new ConsumePipelineStepBuilder<TOut, TNext>(action);
@@ -53,12 +49,8 @@ public sealed class ConsumePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder
         return nextStep;
     }
 
-    /// <summary>
-    /// Adds a synchronous step to the pipeline.
-    /// </summary>
-    /// <param name="action">Step.</param>
-    /// <typeparam name="TNext">Output parameter type.</typeparam>
-    public ConsumePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
+    /// <inheritdoc />
+    public IConsumePipelineStepBuilder<TOut, TNext> AddSyncStep<TNext>(
         Func<TOut, IConsumeContext, TNext> action)
     {
         var nextStep = new ConsumePipelineStepBuilder<TOut, TNext>(action);

@@ -2,19 +2,14 @@
 
 namespace OutboxFlow.Configuration;
 
-/// <summary>
-/// Builds outbox pipelines.
-/// </summary>
-public sealed class OutboxBuilder
+/// <inheritdoc />
+public sealed class OutboxBuilder : IOutboxBuilder
 {
     private Action<ConsumerBuilder>? _consumerConfigureAction;
     private Action<ProducerBuilder>? _producerConfigureAction;
 
-    /// <summary>
-    /// Configures outbox produce pipelines.
-    /// </summary>
-    /// <param name="configure">Configure action.</param>
-    public OutboxBuilder AddProducer(Action<ProducerBuilder> configure)
+    /// <inheritdoc />
+    public IOutboxBuilder AddProducer(Action<IProducerBuilder> configure)
     {
         if (_producerConfigureAction != null)
             throw new InvalidOperationException("An outbox producer is already configured.");
@@ -22,11 +17,8 @@ public sealed class OutboxBuilder
         return this;
     }
 
-    /// <summary>
-    /// Configures outbox consume pipelines.
-    /// </summary>
-    /// <param name="configure">Configure action.</param>
-    public OutboxBuilder AddConsumer(Action<ConsumerBuilder> configure)
+    /// <inheritdoc />
+    public IOutboxBuilder AddConsumer(Action<IConsumerBuilder> configure)
     {
         if (_consumerConfigureAction != null)
             throw new InvalidOperationException("An outbox consumer is already configured.");
@@ -34,10 +26,7 @@ public sealed class OutboxBuilder
         return this;
     }
 
-    /// <summary>
-    /// Builds outbox pipelines.
-    /// </summary>
-    /// <param name="services">Collection of service descriptors.</param>
+    /// <inheritdoc />
     public void Build(IServiceCollection services)
     {
         BuildProducer(services);

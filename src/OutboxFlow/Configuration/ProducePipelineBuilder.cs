@@ -3,11 +3,8 @@ using OutboxFlow.Pipelines;
 
 namespace OutboxFlow.Configuration;
 
-/// <summary>
-/// Outbox produce pipeline builder.
-/// </summary>
-/// <typeparam name="T">Message type to produce.</typeparam>
-public sealed class ProducePipelineBuilder<T> : IPipelineStepBuilder<IProduceContext, T>
+/// <inheritdoc />
+public sealed class ProducePipelineBuilder<T> : IProducePipelineBuilder<T>
 {
     private IPipelineStepBuilder<IProduceContext, T>? _step;
 
@@ -17,12 +14,8 @@ public sealed class ProducePipelineBuilder<T> : IPipelineStepBuilder<IProduceCon
         return new Pipeline<IProduceContext, T>(_step?.Build());
     }
 
-    /// <summary>
-    /// Adds the first step to the pipeline.
-    /// </summary>
-    /// <param name="action">Step.</param>
-    /// <typeparam name="TOut">Output parameter type.</typeparam>
-    public ProducePipelineStepBuilder<T, TOut> AddStep<TOut>(
+    /// <inheritdoc />
+    public IProducePipelineStepBuilder<T, TOut> AddStep<TOut>(
         Func<T, IProduceContext, ValueTask<TOut>> action)
     {
         if (_step != null) throw new InvalidOperationException("The first step is already added.");
@@ -32,12 +25,8 @@ public sealed class ProducePipelineBuilder<T> : IPipelineStepBuilder<IProduceCon
         return step;
     }
 
-    /// <summary>
-    /// Adds the first step to the pipeline.
-    /// </summary>
-    /// <param name="action">Step.</param>
-    /// <typeparam name="TOut">Output parameter type.</typeparam>
-    public ProducePipelineStepBuilder<T, TOut> AddSyncStep<TOut>(
+    /// <inheritdoc />
+    public IProducePipelineStepBuilder<T, TOut> AddSyncStep<TOut>(
         Func<T, IProduceContext, TOut> action)
     {
         if (_step != null) throw new InvalidOperationException("The first step is already added.");

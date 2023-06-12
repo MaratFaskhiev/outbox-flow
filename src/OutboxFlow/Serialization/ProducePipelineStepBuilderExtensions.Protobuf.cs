@@ -14,10 +14,10 @@ public static partial class ProducePipelineStepBuilderExtensions
     /// <param name="step">Step.</param>
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> SerializeToProtobuf<TIn, TOut>(
-        this ProducePipelineStepBuilder<TIn, TOut> step) where TOut : IMessage
+    public static IProducePipelineStepBuilder<TOut, TOut> SerializeToProtobuf<TIn, TOut>(
+        this IProducePipelineStepBuilder<TIn, TOut> step) where TOut : IMessage
     {
-        return step.AddStep((message, context) =>
+        return step.AddSyncStep((message, context) =>
         {
             context.Value = message.ToByteArray();
             return message;
@@ -32,11 +32,11 @@ public static partial class ProducePipelineStepBuilderExtensions
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
     /// <typeparam name="TKey">Message key type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> SerializeKeyToProtobuf<TIn, TOut, TKey>(
-        this ProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
+    public static IProducePipelineStepBuilder<TOut, TOut> SerializeKeyToProtobuf<TIn, TOut, TKey>(
+        this IProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
         where TKey : IMessage
     {
-        return step.AddStep((message, context) =>
+        return step.AddSyncStep((message, context) =>
         {
             context.Key = keyProvider(message).ToByteArray();
             return message;

@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\src\OutboxFlow.Kafka\OutboxFlow.Kafka.csproj"/>
         <ProjectReference Include="..\..\src\OutboxFlow.Postgres\OutboxFlow.Postgres.csproj"/>
         <ProjectReference Include="..\..\src\OutboxFlow\OutboxFlow.csproj"/>
     </ItemGroup>

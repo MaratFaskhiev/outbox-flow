@@ -13,12 +13,12 @@ public static partial class ProducePipelineStepBuilderExtensions
     /// <param name="step">Step.</param>
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> SerializeToJson<TIn, TOut>(
-        this ProducePipelineStepBuilder<TIn, TOut> step)
+    public static IProducePipelineStepBuilder<TOut, TOut> SerializeToJson<TIn, TOut>(
+        this IProducePipelineStepBuilder<TIn, TOut> step)
     {
         var jsonSerializer = new JsonSerializer();
 
-        return step.AddStep((message, context) =>
+        return step.AddSyncStep((message, context) =>
         {
             context.Value = jsonSerializer.Serialize(message);
             return message;
@@ -33,12 +33,12 @@ public static partial class ProducePipelineStepBuilderExtensions
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
     /// <typeparam name="TKey">Message key type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> SerializeKeyToJson<TIn, TOut, TKey>(
-        this ProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
+    public static IProducePipelineStepBuilder<TOut, TOut> SerializeKeyToJson<TIn, TOut, TKey>(
+        this IProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
     {
         var jsonSerializer = new JsonSerializer();
 
-        return step.AddStep((message, context) =>
+        return step.AddSyncStep((message, context) =>
         {
             context.Key = jsonSerializer.Serialize(keyProvider(message));
             return message;

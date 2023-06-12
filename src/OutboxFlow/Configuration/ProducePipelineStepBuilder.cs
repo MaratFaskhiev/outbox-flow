@@ -8,7 +8,7 @@ namespace OutboxFlow.Configuration;
 /// </summary>
 /// <typeparam name="TIn">Input parameter type.</typeparam>
 /// <typeparam name="TOut">Output parameter type.</typeparam>
-public sealed class ProducePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder<IProduceContext, TIn>
+public sealed class ProducePipelineStepBuilder<TIn, TOut> : IProducePipelineStepBuilder<TIn, TOut>
 {
     private readonly Func<TIn, IProduceContext, ValueTask<TOut>>? _action;
     private readonly Func<TIn, IProduceContext, TOut>? _syncAction;
@@ -45,7 +45,7 @@ public sealed class ProducePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder
     /// </summary>
     /// <param name="action">Step.</param>
     /// <typeparam name="TNext">Output parameter type.</typeparam>
-    public ProducePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
+    public IProducePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
         Func<TOut, IProduceContext, ValueTask<TNext>> action)
     {
         var nextStep = new ProducePipelineStepBuilder<TOut, TNext>(action);
@@ -58,7 +58,7 @@ public sealed class ProducePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder
     /// </summary>
     /// <param name="action">Step.</param>
     /// <typeparam name="TNext">Output parameter type.</typeparam>
-    public ProducePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
+    public IProducePipelineStepBuilder<TOut, TNext> AddSyncStep<TNext>(
         Func<TOut, IProduceContext, TNext> action)
     {
         var nextStep = new ProducePipelineStepBuilder<TOut, TNext>(action);

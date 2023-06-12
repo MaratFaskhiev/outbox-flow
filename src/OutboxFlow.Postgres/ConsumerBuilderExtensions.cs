@@ -12,8 +12,8 @@ public static class ConsumerBuilderExtensions
     /// </summary>
     /// <param name="connectionString">Database connection string.</param>
     /// <param name="builder">Outbox consumer builder.</param>
-    public static ConsumerBuilder UsePostgres(
-        this ConsumerBuilder builder,
+    public static IConsumerBuilder UsePostgres(
+        this IConsumerBuilder builder,
         string connectionString)
     {
         builder.OutboxStorageRegistrar = new ConsumerOutboxStorageRegistrar(connectionString);

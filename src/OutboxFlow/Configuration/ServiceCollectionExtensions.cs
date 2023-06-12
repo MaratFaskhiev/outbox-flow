@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">Collection of service descriptors.</param>
     /// <param name="configure">Outbox configure action.</param>
-    public static IServiceCollection AddOutbox(this IServiceCollection services, Action<OutboxBuilder> configure)
+    public static IServiceCollection AddOutbox(this IServiceCollection services, Action<IOutboxBuilder> configure)
     {
         var builder = new OutboxBuilder();
         configure(builder);

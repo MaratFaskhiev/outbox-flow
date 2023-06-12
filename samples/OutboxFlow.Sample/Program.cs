@@ -1,13 +1,15 @@
-﻿using System.Data;
+﻿using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OutboxFlow.Abstractions;
 using OutboxFlow.Configuration;
+using OutboxFlow.Kafka;
 using OutboxFlow.Postgres;
 using OutboxFlow.Sample.Models;
 using OutboxFlow.Serialization;
+using IsolationLevel = System.Data.IsolationLevel;
 
 namespace OutboxFlow.Sample;
 
@@ -41,7 +43,13 @@ public static class Program
     {
         services.AddLogging(cfg => cfg.AddConsole());
 
+        var producerConfig = new ProducerConfig
+        {
+            BootstrapServers = "localhost:9092"
+        };
+
         services
+            .AddKafka()
             .AddOutbox(outboxBuilder =>
                 outboxBuilder
                     .AddProducer(producer => producer
@@ -71,24 +79,11 @@ public static class Program
                         )
                     )
                     .AddConsumer(consumer =>
-                    {
-                        consumer.IsolationLevel = IsolationLevel.Serializable;
                         consumer
+                            .SetIsolationLevel(IsolationLevel.ReadCommitted)
                             .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
-                            .Default(pipeline => pipeline
-                                .AddStep(async (message, ctx) =>
-                                {
-                                    var logger = ctx.ServiceProvider
-                                        .GetRequiredService<ILogger<IPipelineStep<IConsumeContext, IOutboxMessage>>>();
-
-                                    // some async work
-                                    await Task.Delay(1, ctx.CancellationToken);
-
-                                    logger.LogInformation("Message is delivered.");
-
-                                    return message;
-                                }));
-                    }));
+                            .ByDefault(pipeline => pipeline.SendToKafka(producerConfig))
+                    ));
 
         services.AddHostedService<Worker>();
 

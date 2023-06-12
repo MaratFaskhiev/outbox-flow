@@ -13,10 +13,28 @@ public static class ProducePipelineStepBuilderExtensions
     /// </summary>
     /// <param name="step">Step.</param>
     /// <typeparam name="TMiddleware">Middleware type.</typeparam>
+    /// <typeparam name="T">Current step message type.</typeparam>
+    public static IProducePipelineStepBuilder<T, T> AddStep<TMiddleware, T>(
+        this IProducePipelineStepBuilder<T, T> step)
+        where TMiddleware : IProduceMiddleware<T, T>
+    {
+        return step.AddStep(async (message, context) =>
+        {
+            var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
+
+            return await middleware.InvokeAsync(message, context).ConfigureAwait(false);
+        });
+    }
+
+    /// <summary>
+    /// Adds a middleware to the pipeline.
+    /// </summary>
+    /// <param name="step">Step.</param>
+    /// <typeparam name="TMiddleware">Middleware type.</typeparam>
     /// <typeparam name="TIn">Current step input message type.</typeparam>
     /// <typeparam name="TOut">Current step output message type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> AddStep<TMiddleware, TIn, TOut>(
-        this ProducePipelineStepBuilder<TIn, TOut> step)
+    public static IProducePipelineStepBuilder<TOut, TOut> AddStep<TMiddleware, TIn, TOut>(
+        this IProducePipelineStepBuilder<TIn, TOut> step)
         where TMiddleware : IProduceMiddleware<TOut, TOut>
     {
         return step.AddStep(async (message, context) =>
@@ -32,12 +50,12 @@ public static class ProducePipelineStepBuilderExtensions
     /// </summary>
     /// <param name="step">Step.</param>
     /// <typeparam name="TMiddleware">Middleware type.</typeparam>
-    /// <typeparam name="TIn">Middleware input message type.</typeparam>
-    /// <typeparam name="TOut">Middleware output message type.</typeparam>
-    /// <typeparam name="TStep">Current step input message type.</typeparam>
-    public static ProducePipelineStepBuilder<TIn, TOut> AddStep<TMiddleware, TIn, TOut, TStep>(
-        this ProducePipelineStepBuilder<TStep, TIn> step)
-        where TMiddleware : IProduceMiddleware<TIn, TOut>
+    /// <typeparam name="TIn">Current step input message type.</typeparam>
+    /// <typeparam name="TOut">Current step output message type.</typeparam>
+    /// <typeparam name="TNext">Middleware output parameter type.</typeparam>
+    public static IProducePipelineStepBuilder<TOut, TNext> AddStep<TMiddleware, TIn, TOut, TNext>(
+        this IProducePipelineStepBuilder<TIn, TOut> step)
+        where TMiddleware : IProduceMiddleware<TOut, TNext>
     {
         return step.AddStep(async (message, context) =>
         {
@@ -52,13 +70,12 @@ public static class ProducePipelineStepBuilderExtensions
     /// </summary>
     /// <param name="step">Step.</param>
     /// <typeparam name="TMiddleware">Middleware type.</typeparam>
-    /// <typeparam name="TIn">Current step input message type.</typeparam>
-    /// <typeparam name="TOut">Current step output message type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> AddSyncStep<TMiddleware, TIn, TOut>(
-        this ProducePipelineStepBuilder<TIn, TOut> step)
-        where TMiddleware : IProduceSyncMiddleware<TOut, TOut>
+    /// <typeparam name="T">Current step message type.</typeparam>
+    public static IProducePipelineStepBuilder<T, T> AddSyncStep<TMiddleware, T>(
+        this IProducePipelineStepBuilder<T, T> step)
+        where TMiddleware : IProduceSyncMiddleware<T, T>
     {
-        return step.AddStep((message, context) =>
+        return step.AddSyncStep((message, context) =>
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
 
@@ -71,14 +88,33 @@ public static class ProducePipelineStepBuilderExtensions
     /// </summary>
     /// <param name="step">Step.</param>
     /// <typeparam name="TMiddleware">Middleware type.</typeparam>
-    /// <typeparam name="TIn">Middleware input message type.</typeparam>
-    /// <typeparam name="TOut">Middleware output message type.</typeparam>
-    /// <typeparam name="TStep">Current step input message type.</typeparam>
-    public static ProducePipelineStepBuilder<TIn, TOut> AddSyncStep<TMiddleware, TIn, TOut, TStep>(
-        this ProducePipelineStepBuilder<TStep, TIn> step)
-        where TMiddleware : IProduceSyncMiddleware<TIn, TOut>
+    /// <typeparam name="TIn">Current step input message type.</typeparam>
+    /// <typeparam name="TOut">Current step output message type.</typeparam>
+    public static IProducePipelineStepBuilder<TOut, TOut> AddSyncStep<TMiddleware, TIn, TOut>(
+        this IProducePipelineStepBuilder<TIn, TOut> step)
+        where TMiddleware : IProduceSyncMiddleware<TOut, TOut>
     {
-        return step.AddStep((message, context) =>
+        return step.AddSyncStep((message, context) =>
+        {
+            var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
+
+            return middleware.Invoke(message, context);
+        });
+    }
+
+    /// <summary>
+    /// Adds a synchronous middleware to the pipeline.
+    /// </summary>
+    /// <param name="step">Step.</param>
+    /// <typeparam name="TMiddleware">Middleware type.</typeparam>
+    /// <typeparam name="TIn">Current step input message type.</typeparam>
+    /// <typeparam name="TOut">Current step output message type.</typeparam>
+    /// <typeparam name="TNext">Middleware output parameter type.</typeparam>
+    public static IProducePipelineStepBuilder<TOut, TNext> AddSyncStep<TMiddleware, TIn, TOut, TNext>(
+        this IProducePipelineStepBuilder<TIn, TOut> step)
+        where TMiddleware : IProduceSyncMiddleware<TOut, TNext>
+    {
+        return step.AddSyncStep((message, context) =>
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
 
@@ -91,12 +127,12 @@ public static class ProducePipelineStepBuilderExtensions
     /// </summary>
     /// <param name="step">Step.</param>
     /// <param name="keyProvider">Provides a key value.</param>
-    /// <typeparam name="TIn">Step input message type.</typeparam>
-    /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> SetKey<TIn, TOut>(
-        this ProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, byte[]> keyProvider)
+    /// <typeparam name="TIn">Current step input message type.</typeparam>
+    /// <typeparam name="TOut">Current step output message type.</typeparam>
+    public static IProducePipelineStepBuilder<TOut, TOut> SetKey<TIn, TOut>(
+        this IProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, byte[]> keyProvider)
     {
-        return step.AddStep((message, context) =>
+        return step.AddSyncStep((message, context) =>
         {
             context.Key = keyProvider(message);
             return message;
@@ -108,12 +144,12 @@ public static class ProducePipelineStepBuilderExtensions
     /// </summary>
     /// <param name="step">Step.</param>
     /// <param name="destination">Destination.</param>
-    /// <typeparam name="TIn">Step input message type.</typeparam>
-    /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> SetDestination<TIn, TOut>(
-        this ProducePipelineStepBuilder<TIn, TOut> step, string destination)
+    /// <typeparam name="TIn">Current step input message type.</typeparam>
+    /// <typeparam name="TOut">Current step output message type.</typeparam>
+    public static IProducePipelineStepBuilder<TOut, TOut> SetDestination<TIn, TOut>(
+        this IProducePipelineStepBuilder<TIn, TOut> step, string destination)
     {
-        return step.AddStep((message, context) =>
+        return step.AddSyncStep((message, context) =>
         {
             context.Destination = destination;
             return message;
@@ -124,10 +160,10 @@ public static class ProducePipelineStepBuilderExtensions
     /// Saves the message to the outbox storage.
     /// </summary>
     /// <param name="step">Step.</param>
-    /// <typeparam name="TIn">Step input message type.</typeparam>
-    /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static ProducePipelineStepBuilder<TOut, TOut> Save<TIn, TOut>(
-        this ProducePipelineStepBuilder<TIn, TOut> step)
+    /// <typeparam name="TIn">Current step input message type.</typeparam>
+    /// <typeparam name="TOut">Current step output message type.</typeparam>
+    public static IProducePipelineStepBuilder<TOut, TOut> Save<TIn, TOut>(
+        this IProducePipelineStepBuilder<TIn, TOut> step)
     {
         return step.AddStep(async (message, context) =>
         {
