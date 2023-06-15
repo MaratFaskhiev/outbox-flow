@@ -1,0 +1,64 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+	"name": "Outbox-Flow Devcontainer",
+	"build": {
+		"dockerfile": "Containerfile",
+		"args": { "USER_NAME": "${localEnv:USER:dev}" }
+	},
+
+	"mounts": [
+		"type=bind,source=${localEnv:HOME}/.ssh,target=/home/${localEnv:USER:dev}/.ssh,consistency=consistent",
+		"source=outbox-devcontainer-containers,target=/var/lib/containers,type=volume",
+		"source=outbox-devcontainer-rootless-containers,target=/home/${localEnv:USER:dev}/.local/share/containers,type=volume"
+	],
+
+	"features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": "true",
+            "username": "${localEnv:USER:dev}",
+            "userUid": "1000",
+            "userGid": "1000",
+            "upgradePackages": "true"
+        }
+	},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "bash ./.devcontainer/postCreateCommand.sh",
+
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"eamodio.gitlens",
+				"mhutchie.git-graph",
+				"ms-dotnettools.csdevkit",
+				"mutantdino.resourcemonitor"
+			]
+		}
+	},
+
+	"runArgs": [
+		"--userns=keep-id",
+		"--privileged"
+		// "--cap-add=sys_admin",
+		// "--security-opt",
+		// "seccomp=unconfined",
+		// "--device",
+		// "/dev/fuse",
+		// "--security-opt",
+		// "label=disable",
+		// "--security-opt",
+		// "apparmor=unconfined"
+
+		// "--cap-add=SYS_PTRACE",
+		// "--security-opt",
+		// "seccomp=unconfined"
+	],
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "${localEnv:USER:dev}"
+}
