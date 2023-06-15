@@ -9,3 +9,6 @@ term_handler(){
 
 # Setup signal handlers
 trap 'term_handler' SIGTERM
+
+echo "***Starting"
+dotnet restore
