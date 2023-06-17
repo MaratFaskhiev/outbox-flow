@@ -4,7 +4,7 @@ ARG USER_NAME
 
 RUN dnf -y update && \
     dnf -y reinstall shadow-utils && \
-    dnf -y install dotnet-sdk-7.0 podman \
+    dnf -y install dotnet-sdk-7.0 podman podman-compose \
                    # podman dependencies
                    fuse-overlayfs --exclude container-selinux \
                    xterm && \
