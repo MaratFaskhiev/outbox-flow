@@ -9,8 +9,9 @@
 
 	"mounts": [
 		"type=bind,source=${localEnv:HOME}/.ssh,target=/home/${localEnv:USER:dev}/.ssh,consistency=consistent",
-		"source=outbox-devcontainer-containers,target=/var/lib/containers,type=volume",
-		"source=outbox-devcontainer-rootless-containers,target=/home/${localEnv:USER:dev}/.local/share/containers,type=volume"
+		"type=tmpfs,destination=/run/user",
+		"type=volume,source=outbox-devcontainer-containers,target=/var/lib/containers",
+		"type=volume,source=outbox-devcontainer-rootless-containers,target=/home/${localEnv:USER:dev}/.local/share/containers"
 	],
 
 	"features": {
