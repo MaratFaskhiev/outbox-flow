@@ -8,13 +8,19 @@
 	},
 
 	"mounts": [
+		// Share git ssh keys with the dev container
 		"type=bind,source=${localEnv:HOME}/.ssh,target=/home/${localEnv:USER:dev}/.ssh,consistency=consistent",
+		// Use tempfs for the container's work directory to ensure there are no stale file from prev sessions there
 		"type=tmpfs,destination=/run/user",
+		// Use volumes to store inner containers
 		"type=volume,source=outbox-devcontainer-containers,target=/var/lib/containers",
-		"type=volume,source=outbox-devcontainer-rootless-containers,target=/home/${localEnv:USER:dev}/.local/share/containers"
+		"type=volume,source=outbox-devcontainer-rootless-containers,target=/home/${localEnv:USER:dev}/.local/share/containers",
+		// Special volume to persist bash history
+		"type=volume,source=outbox-devcontainer-bashhistory,target=/commandhistory"
 	],
 
 	"features": {
+		// Common Utils feature ensures friendly dev environment
         "ghcr.io/devcontainers/features/common-utils:2": {
             "installZsh": "true",
             "username": "${localEnv:USER:dev}",

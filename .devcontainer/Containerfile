@@ -5,22 +5,28 @@ ARG USER_NAME
 RUN dnf -y update && \
     dnf -y reinstall shadow-utils && \
     dnf -y install dotnet-sdk-7.0 podman podman-compose \
-                   # podman dependencies
+                   # Podman dependencies
                    fuse-overlayfs --exclude container-selinux \
                    xterm && \
-    dnf clean all
-RUN useradd -u 1000 ${USER_NAME} && echo ${USER_NAME}:10000:5000 > /etc/subuid && echo ${USER_NAME}:10000:5000 > /etc/subgid
+    dnf clean all && \
+    # Create container user
+    useradd -u 1000 ${USER_NAME} && echo ${USER_NAME}:10000:5000 > /etc/subuid && echo ${USER_NAME}:10000:5000 > /etc/subgid && \
+    # Disable telemetry
+    mkdir -p /home/${USER_NAME}/.local/share/containers/${USER_NAME}/configuration && \
+    echo '{"telemetry.enabled": false, "telemetry.check": true}' > /home/${USER_NAME}/.local/share/containers/${USER_NAME}/configuration/settings.json && \
+    # Persist bash history
+    SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" && \
+    mkdir /commandhistory && \
+    touch /commandhistory/.bash_history && \
+    chown -R ${USER_NAME} /commandhistory && \
+    echo "$SNIPPET" >> "/home/${USER_NAME}/.bashrc"
 
-# Disable telemetry
-RUN mkdir -p /home/${USER_NAME}/.local/share/containers/${USER_NAME}/configuration && \
-    echo '{"telemetry.enabled": false, "telemetry.check": true}' > /home/${USER_NAME}/.local/share/containers/${USER_NAME}/configuration/settings.json
-
-# initialize conf files
+# Initialize conf files
 
 ADD https://raw.githubusercontent.com/containers/libpod/master/contrib/podmanimage/stable/containers.conf /etc/containers/containers.conf
 ADD https://raw.githubusercontent.com/containers/libpod/master/contrib/podmanimage/stable/podman-containers.conf /home/${USER_NAME}/.config/containers/containers.conf
 
-# set permissions
+# Set permissions
 RUN chown ${USER_NAME}:${USER_NAME} -R /home/${USER_NAME} && chmod 644 /etc/containers/containers.conf && \
     mkdir -p /var/lib/shared/overlay-images /var/lib/shared/overlay-layers /var/lib/shared/vfs-images /var/lib/shared/vfs-layers; touch /var/lib/shared/overlay-images/images.lock; touch /var/lib/shared/overlay-layers/layers.lock; touch /var/lib/shared/vfs-images/images.lock; touch /var/lib/shared/vfs-layers/layers.lock && \
     mkdir -p /run/user/1000 && chown ${USER_NAME}:${USER_NAME} /run/user/1000
@@ -28,7 +34,7 @@ COPY ["./entrypoint.sh", "/usr/local/${USER_NAME}/"]
 
 ENV _CONTAINERS_USERNS_CONFIGURED=""
 
-# socket path for podman
+# Socket path for podman
 ENV XDG_RUNTIME_DIR=/run/user/1000
 
 ENTRYPOINT [ "/usr/local/${USER_NAME}/entrypoint.sh" ]
