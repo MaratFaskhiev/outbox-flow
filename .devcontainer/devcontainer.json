@@ -42,6 +42,7 @@
 			"extensions": [
 				"eamodio.gitlens",
 				"mhutchie.git-graph",
+				"ms-dotnettools.csharp@prerelease",
 				"ms-dotnettools.csdevkit",
 				"mutantdino.resourcemonitor"
 			]
