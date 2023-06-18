@@ -31,7 +31,31 @@
 	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [
+		2181,
+		5432,
+		9092,
+		9093
+	],
+
+	"portsAttributes": {
+		"2181": {
+			"label": "Zookeeper",
+			"onAutoForward": "silent"
+		},
+		"5432": {
+			"label": "Postgres",
+			"onAutoForward": "silent"
+		},
+		"9092": {
+			"label": "Kafka 1",
+			"onAutoForward": "silent"
+		},
+		"9093": {
+			"label": "Kafka 2",
+			"onAutoForward": "silent"
+		}
+	},
 
 	// Use 'postStartCommand' to ensure project dependencies are restored.
 	"postStartCommand": ["dotnet", "restore"],
