@@ -64,12 +64,18 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
+				// Tools to help with git interaction
 				"eamodio.gitlens",
 				"mhutchie.git-graph",
+				// Docker extension
 				"ms-azuretools.vscode-docker",
+				// Tools for C# development
 				"ms-dotnettools.csharp@prerelease",
 				"ms-dotnettools.csdevkit",
-				"mutantdino.resourcemonitor"
+				// Info about CPU and memory consumption in the dev container
+				"mutantdino.resourcemonitor",
+				// Management tool for postgres and kafka
+				"cweijan.vscode-postgresql-client2"
 			]
 		}
 	},
