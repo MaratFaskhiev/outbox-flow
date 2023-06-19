@@ -57,9 +57,6 @@
 		}
 	},
 
-	// Use 'postStartCommand' to ensure project dependencies are restored.
-	"postStartCommand": ["dotnet", "restore"],
-
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
