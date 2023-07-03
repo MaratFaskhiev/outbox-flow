@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using OutboxFlow.Abstractions;
+using OutboxFlow.Produce;
 using OutboxFlow.Sample.Models;
 
 namespace OutboxFlow.Sample;

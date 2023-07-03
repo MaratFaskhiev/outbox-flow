@@ -1,6 +1,4 @@
-﻿using OutboxFlow.Abstractions;
-
-namespace OutboxFlow.Configuration;
+﻿namespace OutboxFlow.Configuration;
 
 /// <summary>
 /// Represents a pipeline step builder.

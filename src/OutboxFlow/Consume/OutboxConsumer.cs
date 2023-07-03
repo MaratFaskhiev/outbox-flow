@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OutboxFlow.Abstractions;
-using OutboxFlow.Configuration;
+using OutboxFlow.Storage;
+using OutboxFlow.Storage.Configuration;
 
 namespace OutboxFlow.Consume;
 

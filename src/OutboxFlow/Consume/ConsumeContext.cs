@@ -1,8 +1,4 @@
-﻿#pragma warning disable CA1819
-
-using OutboxFlow.Abstractions;
-
-namespace OutboxFlow.Consume;
+﻿namespace OutboxFlow.Consume;
 
 /// <inheritdoc />
 public sealed class ConsumeContext : IConsumeContext
@@ -33,16 +29,16 @@ public sealed class ConsumeContext : IConsumeContext
     public string? Destination { get; set; }
 
     /// <inheritdoc />
-    public byte[]? Key { get; set; }
-
-    /// <inheritdoc />
-    public byte[] Value { get; set; }
-
-    /// <inheritdoc />
     public IServiceProvider ServiceProvider { get; }
 
     /// <inheritdoc />
     public CancellationToken CancellationToken { get; }
-}
 
+#pragma warning disable CA1819
+    /// <inheritdoc />
+    public byte[]? Key { get; set; }
+
+    /// <inheritdoc />
+    public byte[] Value { get; set; }
 #pragma warning restore CA1819
+}

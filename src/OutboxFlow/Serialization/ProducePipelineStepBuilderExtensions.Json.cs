@@ -1,4 +1,4 @@
-﻿using OutboxFlow.Configuration;
+﻿using OutboxFlow.Produce.Configuration;
 
 namespace OutboxFlow.Serialization;
 

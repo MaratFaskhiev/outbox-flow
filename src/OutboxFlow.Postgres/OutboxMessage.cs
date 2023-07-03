@@ -1,6 +1,4 @@
-﻿#pragma warning disable CA1819
-
-using OutboxFlow.Abstractions;
+﻿using OutboxFlow.Storage;
 
 namespace OutboxFlow.Postgres;
 
@@ -30,11 +28,11 @@ public sealed class OutboxMessage : IOutboxMessage
     /// <inheritdoc />
     public string? Destination { get; }
 
+#pragma warning disable CA1819
     /// <inheritdoc />
     public byte[]? Key { get; }
 
     /// <inheritdoc />
     public byte[] Value { get; }
-}
-
 #pragma warning restore CA1819
+}

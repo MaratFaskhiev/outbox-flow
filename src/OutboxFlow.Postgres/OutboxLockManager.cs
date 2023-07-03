@@ -1,11 +1,11 @@
 ﻿using System.Data;
 using Npgsql;
-using OutboxFlow.Abstractions;
+using OutboxFlow.Storage;
 
 namespace OutboxFlow.Postgres;
 
 /// <summary>
-/// Outbox state storage which uses PostgreSQL as an underlying storage.
+/// Outbox lock manager which uses PostgreSQL as an underlying storage.
 /// </summary>
 public sealed class OutboxLockManager : IOutboxLockManager
 {

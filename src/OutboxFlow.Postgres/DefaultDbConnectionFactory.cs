@@ -1,6 +1,6 @@
 ﻿using System.Data;
 using Npgsql;
-using OutboxFlow.Abstractions;
+using OutboxFlow.Storage;
 
 namespace OutboxFlow.Postgres;
 

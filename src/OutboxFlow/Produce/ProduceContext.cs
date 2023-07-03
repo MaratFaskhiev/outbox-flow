@@ -1,7 +1,4 @@
-﻿#pragma warning disable CA1819
-
-using System.Data;
-using OutboxFlow.Abstractions;
+﻿using System.Data;
 
 namespace OutboxFlow.Produce;
 
@@ -26,12 +23,6 @@ public sealed class ProduceContext : IProduceContext
     public string? Destination { get; set; }
 
     /// <inheritdoc />
-    public byte[]? Key { get; set; }
-
-    /// <inheritdoc />
-    public byte[]? Value { get; set; }
-
-    /// <inheritdoc />
     public IDbTransaction Transaction { get; }
 
     /// <inheritdoc />
@@ -39,6 +30,12 @@ public sealed class ProduceContext : IProduceContext
 
     /// <inheritdoc />
     public CancellationToken CancellationToken { get; }
-}
 
+#pragma warning disable CA1819
+    /// <inheritdoc />
+    public byte[]? Key { get; set; }
+
+    /// <inheritdoc />
+    public byte[]? Value { get; set; }
 #pragma warning restore CA1819
+}

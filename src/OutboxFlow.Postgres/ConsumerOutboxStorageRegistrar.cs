@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using OutboxFlow.Abstractions;
-using OutboxFlow.Configuration;
+using OutboxFlow.Storage;
+using OutboxFlow.Storage.Configuration;
 
 namespace OutboxFlow.Postgres;
 

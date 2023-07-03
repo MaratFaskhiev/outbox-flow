@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OutboxFlow.Configuration;
+using OutboxFlow.Produce.Configuration;
 
 namespace OutboxFlow.Serialization;
 

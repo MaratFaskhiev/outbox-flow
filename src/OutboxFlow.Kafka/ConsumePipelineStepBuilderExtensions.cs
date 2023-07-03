@@ -1,6 +1,6 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
-using OutboxFlow.Configuration;
+using OutboxFlow.Consume.Configuration;
 
 namespace OutboxFlow.Kafka;
 

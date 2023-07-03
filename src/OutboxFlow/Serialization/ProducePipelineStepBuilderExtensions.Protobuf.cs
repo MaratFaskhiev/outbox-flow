@@ -1,5 +1,5 @@
 ﻿using Google.Protobuf;
-using OutboxFlow.Configuration;
+using OutboxFlow.Produce.Configuration;
 
 namespace OutboxFlow.Serialization;
 

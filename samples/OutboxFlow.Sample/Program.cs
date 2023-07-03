@@ -3,10 +3,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OutboxFlow.Abstractions;
 using OutboxFlow.Configuration;
+using OutboxFlow.Consume.Configuration;
 using OutboxFlow.Kafka;
 using OutboxFlow.Postgres;
+using OutboxFlow.Produce;
+using OutboxFlow.Produce.Configuration;
 using OutboxFlow.Sample.Models;
 using OutboxFlow.Serialization;
 using IsolationLevel = System.Data.IsolationLevel;
@@ -82,7 +84,7 @@ public static class Program
                         consumer
                             .SetIsolationLevel(IsolationLevel.ReadCommitted)
                             .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
-                            .ByDefault(pipeline => pipeline.SendToKafka(producerConfig))
+                            .AddDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
                     ));
 
         services.AddHostedService<Worker>();

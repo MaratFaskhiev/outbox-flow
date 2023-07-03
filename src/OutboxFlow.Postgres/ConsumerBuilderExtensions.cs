@@ -1,4 +1,4 @@
-﻿using OutboxFlow.Configuration;
+﻿using OutboxFlow.Consume.Configuration;
 
 namespace OutboxFlow.Postgres;
 

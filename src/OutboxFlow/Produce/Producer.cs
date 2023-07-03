@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using OutboxFlow.Abstractions;
 
 namespace OutboxFlow.Produce;
 

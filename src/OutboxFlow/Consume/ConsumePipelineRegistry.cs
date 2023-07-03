@@ -1,4 +1,4 @@
-﻿using OutboxFlow.Abstractions;
+﻿using OutboxFlow.Storage;
 
 namespace OutboxFlow.Consume;
 

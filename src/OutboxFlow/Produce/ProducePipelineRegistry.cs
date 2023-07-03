@@ -1,6 +1,4 @@
-﻿using OutboxFlow.Abstractions;
-
-namespace OutboxFlow.Produce;
+﻿namespace OutboxFlow.Produce;
 
 /// <inheritdoc />
 public sealed class ProducePipelineRegistry : IProducePipelineRegistry

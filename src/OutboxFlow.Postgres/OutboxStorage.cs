@@ -1,7 +1,8 @@
 ﻿using System.Data;
 using Npgsql;
 using NpgsqlTypes;
-using OutboxFlow.Abstractions;
+using OutboxFlow.Produce;
+using OutboxFlow.Storage;
 
 namespace OutboxFlow.Postgres;
 

@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using OutboxFlow.Abstractions;
+using OutboxFlow.Produce;
 
 namespace OutboxFlow.Sample;
 
