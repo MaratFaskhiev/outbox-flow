@@ -4,14 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OutboxFlow.Configuration;
-using OutboxFlow.Consume.Configuration;
 using OutboxFlow.Kafka;
 using OutboxFlow.Postgres;
-using OutboxFlow.Produce;
 using OutboxFlow.Produce.Configuration;
 using OutboxFlow.Sample.Models;
 using OutboxFlow.Serialization;
-using IsolationLevel = System.Data.IsolationLevel;
 
 namespace OutboxFlow.Sample;
 
@@ -51,45 +48,46 @@ public static class Program
         };
 
         services
+            // Register Apache Kafka dependencies
             .AddKafka()
+            // Register the outbox dependencies
             .AddOutbox(outboxBuilder =>
                 outboxBuilder
+                    // Register the producer dependencies
                     .AddProducer(producer => producer
+                        // Use PostgreSQL as an underlying storage
                         .UsePostgres()
+                        // Configure pipeline for the SampleTextModel message type
                         .ForMessage<SampleTextModel>(pipeline =>
                             pipeline
-                                .AddSyncStep<SampleMiddleware<SampleTextModel>, SampleTextModel>()
-                                .AddStep(async (message, ctx) =>
+                                // Add sample synchronous middleware
+                                .AddSyncStep<LoggingMiddleware, SampleTextModel>()
+                                // Convert message to the prototype model
+                                .AddSyncStep((message, _) => new Protos.SampleTextModel
                                 {
-                                    var logger = ctx.ServiceProvider.GetRequiredService<ILogger<IProducer>>();
-
-                                    // some async work
-                                    await Task.Delay(1, ctx.CancellationToken);
-
-                                    var protoModel = new Protos.SampleTextModel
-                                    {
-                                        Value = message.Value
-                                    };
-
-                                    logger.LogInformation("Message is converted.");
-
-                                    return protoModel;
+                                    Value = message.Value
                                 })
+                                // Serialize the prototype model to a byte array
                                 .SerializeToProtobuf()
+                                // Set the message destination
                                 .SetDestination("topic")
+                                // Save the message to a storage
                                 .Save()
                         )
                     )
+                    // Register the consumer dependencies
                     .AddConsumer(consumer =>
                         consumer
-                            .SetIsolationLevel(IsolationLevel.ReadCommitted)
+                            // Use PostgreSQL as an underlying storage
                             .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
+                            // Configure the default pipeline for outbox messages.
+                            // Default route will be used for all destination which are not configured explicitly
                             .AddDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
-                    ));
+                    )
+                );
+
+        services.AddScoped<LoggingMiddleware>();
 
         services.AddHostedService<Worker>();
-
-        services.AddScoped<SampleMiddleware<SampleTextModel>>();
-        services.AddScoped<SampleMiddleware<SampleNumericModel>>();
     }
 }

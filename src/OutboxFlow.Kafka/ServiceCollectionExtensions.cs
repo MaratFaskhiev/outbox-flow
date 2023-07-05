@@ -9,7 +9,7 @@ namespace OutboxFlow.Kafka;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds an outbox.
+    /// Registers Apache Kafka dependencies.
     /// </summary>
     /// <param name="services">Collection of service descriptors.</param>
     public static IServiceCollection AddKafka(this IServiceCollection services)

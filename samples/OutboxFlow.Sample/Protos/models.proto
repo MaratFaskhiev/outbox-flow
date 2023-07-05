@@ -2,10 +2,6 @@
 
 option csharp_namespace = "OutboxFlow.Protos";
 
-message SampleNumericModel {
-  int32 value = 1;
-}
-
 message SampleTextModel {
   string value = 1;
 }
