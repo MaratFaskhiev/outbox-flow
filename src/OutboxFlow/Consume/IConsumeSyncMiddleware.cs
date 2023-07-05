@@ -3,7 +3,7 @@
 namespace OutboxFlow.Consume;
 
 /// <summary>
-/// Represents a synchronous consume middleware.
+/// Represents an asynchronous synchronous consume middleware.
 /// </summary>
 /// <typeparam name="TIn">Input message type.</typeparam>
 /// <typeparam name="TOut">Output message type.</typeparam>

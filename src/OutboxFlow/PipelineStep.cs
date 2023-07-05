@@ -39,7 +39,7 @@ public sealed class PipelineStep<TContext, TIn, TOut> : IPipelineStep<TContext, 
     }
 
     /// <inheritdoc />
-    public async ValueTask InvokeAsync(TIn message, TContext context)
+    public async ValueTask RunAsync(TIn message, TContext context)
     {
         var result = _action != null
             ? await _action.Invoke(message, context).ConfigureAwait(false)
@@ -47,6 +47,6 @@ public sealed class PipelineStep<TContext, TIn, TOut> : IPipelineStep<TContext, 
 
         if (_nextStep == null) return;
 
-        await _nextStep.InvokeAsync(result, context).ConfigureAwait(false);
+        await _nextStep.RunAsync(result, context).ConfigureAwait(false);
     }
 }

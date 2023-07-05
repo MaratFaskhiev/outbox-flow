@@ -34,7 +34,7 @@ services
                             Value = message.Value
                         })
                         // Serialize the prototype model to a byte array
-                        .SerializeToProtobuf()
+                        .SerializeWithProtobuf()
                         // Set the message destination
                         .SetDestination("topic")
                         // Save the message to a storage
@@ -44,7 +44,7 @@ services
         );
 ```
 
-In this example we configure a produce pipeline for the `SampleTextModel` message type.
+In this example, we configure a produce pipeline for the `SampleTextModel` message type.
 
 Now we are ready to produce a first message:
 
@@ -70,7 +70,7 @@ private async Task ProduceSampleMessageAsync(CancellationToken cancellationToken
 ```
 
 ### Consumers
-The purpose of consumers is to read messages from an outbox storage and send them to the destination.
+The purpose of consumers is to read messages from outbox storage and send them to the destination.
 
 Let's check the sample consumer configuration:
 ```csharp
@@ -93,18 +93,18 @@ services
                     .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
                     // Configure the default pipeline for outbox messages.
                     // Default route will be used for all destination which are not configured explicitly
-                    .AddDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
+                    .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
             )
         );
 ```
 
-This code registers a background service which reads and sends outbox messages to the specified destination.
+This code registers a background service that reads and sends outbox messages to the specified destination.
 
 Now let's get familiar with the underlying message storage.
 
 ### Outbox storage
 
-As you noticed we used `UsePostgres` method. It indicates that we are going to use PostgreSQL implementation of the outbox storage. But at first we need to create all required tables for this implementation. Let's check the script:
+As you noticed, we used the `UsePostgres` method. It indicates that we are going to use PostgreSQL implementation of the outbox storage. But first we need to create all required tables for this implementation. Let's check the script:
 
 ```sql
 create table if not exists outbox_state
@@ -125,11 +125,11 @@ create table if not exists outbox_message
 
 We are creating two tables:
 * `outbox_message` is used to store messages
-* `outbox_state` is used to sync an access from multiple consumers. Single consumer is allowed to read messages at a time
+* `outbox_state` is used to sync access from multiple consumers. The single consumer is allowed to read messages at a time
 
 ### Sample
 
-You can check the full sample application [here](samples/OutboxFlow.Sample).
+You can check the complete sample application [here](samples/OutboxFlow.Sample).
 
 ### To Be Done :)
 

@@ -8,9 +8,9 @@
 public interface IPipelineStep<TContext, T>
 {
     /// <summary>
-    /// Invokes a pipeline step.
+    /// Runs a pipeline step.
     /// </summary>
     /// <param name="message">Message.</param>
     /// <param name="context">Context.</param>
-    ValueTask InvokeAsync(T message, TContext context);
+    ValueTask RunAsync(T message, TContext context);
 }

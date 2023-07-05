@@ -40,7 +40,7 @@ public sealed class ConsumePipelineStepBuilder<TIn, TOut> : IConsumePipelineStep
     }
 
     /// <inheritdoc />
-    public IConsumePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
+    public IConsumePipelineStepBuilder<TOut, TNext> AddAsyncStep<TNext>(
         Func<TOut, IConsumeContext, ValueTask<TNext>> action)
     {
         var nextStep = new ConsumePipelineStepBuilder<TOut, TNext>(action);

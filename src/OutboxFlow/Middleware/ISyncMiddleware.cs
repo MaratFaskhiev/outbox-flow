@@ -9,9 +9,9 @@
 public interface ISyncMiddleware<TContext, TIn, TOut>
 {
     /// <summary>
-    /// Invokes a middleware.
+    /// Runs a middleware.
     /// </summary>
     /// <param name="message">Message.</param>
     /// <param name="context">Context.</param>
-    TOut Invoke(TIn message, TContext context);
+    TOut Run(TIn message, TContext context);
 }

@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using OutboxFlow.Consume.Configuration;
+using OutboxFlow.Storage;
 
 namespace OutboxFlow.Kafka;
 
@@ -15,21 +16,20 @@ public static class ConsumePipelineStepBuilderExtensions
     /// <param name="pipeline">Pipeline.</param>
     /// <param name="producerConfig">Producer config.</param>
     /// <typeparam name="TIn">Current step input message type.</typeparam>
-    /// <typeparam name="TOut">Current step output message type.</typeparam>
-    public static IConsumePipelineStepBuilder<TOut, TOut> SendToKafka<TIn, TOut>(
-        this IConsumePipelineStepBuilder<TIn, TOut> pipeline,
+    public static IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage> SendToKafka<TIn>(
+        this IConsumePipelineStepBuilder<TIn, IOutboxMessage> pipeline,
         ProducerConfig producerConfig)
     {
-        return pipeline.AddStep(async (message, context) =>
+        return pipeline.AddAsyncStep(async (message, context) =>
         {
             var producerRegistry = context.ServiceProvider.GetRequiredService<IKafkaProducerRegistry>();
             var producer = producerRegistry.GetOrCreate(producerConfig);
 
             var kafkaMessage = new Message<byte[], byte[]>();
-            if (context.Key != null)
-                kafkaMessage.Key = context.Key;
-            kafkaMessage.Value = context.Value;
-            await producer.ProduceAsync(context.Destination, kafkaMessage, context.CancellationToken)
+            if (message.Key != null)
+                kafkaMessage.Key = message.Key;
+            kafkaMessage.Value = message.Value;
+            await producer.ProduceAsync(message.Destination, kafkaMessage, context.CancellationToken)
                 .ConfigureAwait(false);
 
             return message;

@@ -30,7 +30,7 @@ public sealed class ConsumerBuilder : IConsumerBuilder
     public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <inheritdoc />
-    public IConsumerBuilder AddDefaultRoute(Action<IConsumePipelineBuilder> configure)
+    public IConsumerBuilder SetDefaultRoute(Action<IConsumePipelineBuilder> configure)
     {
         if (_defaultPipeline != null)
             throw new InvalidOperationException(

@@ -25,6 +25,6 @@ public sealed class Producer : IProducer
         var pipeline = _registry.GetPipeline<T>();
 
         var context = new ProduceContext(transaction, _serviceProvider, cancellationToken);
-        await pipeline.InvokeAsync(message, context).ConfigureAwait(false);
+        await pipeline.RunAsync(message, context).ConfigureAwait(false);
     }
 }

@@ -19,10 +19,10 @@ public sealed class Pipeline<TContext, T> : IPipelineStep<TContext, T>
     }
 
     /// <inheritdoc />
-    public async ValueTask InvokeAsync(T message, TContext context)
+    public async ValueTask RunAsync(T message, TContext context)
     {
         if (_step == null) return;
 
-        await _step.InvokeAsync(message, context).ConfigureAwait(false);
+        await _step.RunAsync(message, context).ConfigureAwait(false);
     }
 }

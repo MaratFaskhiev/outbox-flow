@@ -13,7 +13,7 @@ public sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel, 
         _logger = logger;
     }
 
-    public SampleTextModel Invoke(SampleTextModel message, IProduceContext context)
+    public SampleTextModel Run(SampleTextModel message, IProduceContext context)
     {
         _logger.LogInformation("Produced message: {Value}", message.Value);
 

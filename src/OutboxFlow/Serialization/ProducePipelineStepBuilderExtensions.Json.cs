@@ -13,7 +13,7 @@ public static partial class ProducePipelineStepBuilderExtensions
     /// <param name="step">Step.</param>
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static IProducePipelineStepBuilder<TOut, TOut> SerializeToJson<TIn, TOut>(
+    public static IProducePipelineStepBuilder<TOut, TOut> SerializeWithJson<TIn, TOut>(
         this IProducePipelineStepBuilder<TIn, TOut> step)
     {
         var jsonSerializer = new JsonSerializer();
@@ -33,7 +33,7 @@ public static partial class ProducePipelineStepBuilderExtensions
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
     /// <typeparam name="TKey">Message key type.</typeparam>
-    public static IProducePipelineStepBuilder<TOut, TOut> SerializeKeyToJson<TIn, TOut, TKey>(
+    public static IProducePipelineStepBuilder<TOut, TOut> SerializeKeyWithJson<TIn, TOut, TKey>(
         this IProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
     {
         var jsonSerializer = new JsonSerializer();

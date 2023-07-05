@@ -10,11 +10,11 @@ namespace OutboxFlow.Consume.Configuration;
 public interface IConsumePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder<IConsumeContext, TIn>
 {
     /// <summary>
-    /// Adds a step to the pipeline.
+    /// Adds an asynchronous step to the pipeline.
     /// </summary>
     /// <param name="action">Step.</param>
     /// <typeparam name="TNext">Output parameter type.</typeparam>
-    IConsumePipelineStepBuilder<TOut, TNext> AddStep<TNext>(Func<TOut, IConsumeContext, ValueTask<TNext>> action);
+    IConsumePipelineStepBuilder<TOut, TNext> AddAsyncStep<TNext>(Func<TOut, IConsumeContext, ValueTask<TNext>> action);
 
     /// <summary>
     /// Adds a synchronous step to the pipeline.

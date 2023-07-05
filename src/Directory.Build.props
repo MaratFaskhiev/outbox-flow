@@ -1,5 +1,8 @@
 <Project>
     <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
         <AnalysisMode>All</AnalysisMode>
         <!-- CA1062: Validate arguments of public methods -->
         <!-- CA1848: Use the LoggerMessage delegates -->

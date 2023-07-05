@@ -76,14 +76,11 @@ public sealed class OutboxConsumer : IOutboxConsumer
         foreach (var message in messages)
         {
             var context = new ConsumeContext(
-                message.Destination,
-                message.Key,
-                message.Value,
                 _serviceProvider,
                 combinedTokenSource.Token);
 
             var consumePipeline = _registry.GetPipeline(message.Destination);
-            await consumePipeline.InvokeAsync(message, context).ConfigureAwait(false);
+            await consumePipeline.RunAsync(message, context).ConfigureAwait(false);
         }
 
         _logger.LogDebug("Delivered {Count} messages.", messages.Count);

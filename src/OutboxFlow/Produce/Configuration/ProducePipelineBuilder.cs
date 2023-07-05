@@ -14,7 +14,7 @@ public sealed class ProducePipelineBuilder<T> : IProducePipelineBuilder<T>
     }
 
     /// <inheritdoc />
-    public IProducePipelineStepBuilder<T, TOut> AddStep<TOut>(
+    public IProducePipelineStepBuilder<T, TOut> AddAsyncStep<TOut>(
         Func<T, IProduceContext, ValueTask<TOut>> action)
     {
         if (_step != null) throw new InvalidOperationException("The first step is already added.");

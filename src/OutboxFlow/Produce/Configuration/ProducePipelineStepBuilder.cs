@@ -44,7 +44,7 @@ public sealed class ProducePipelineStepBuilder<TIn, TOut> : IProducePipelineStep
     /// </summary>
     /// <param name="action">Step.</param>
     /// <typeparam name="TNext">Output parameter type.</typeparam>
-    public IProducePipelineStepBuilder<TOut, TNext> AddStep<TNext>(
+    public IProducePipelineStepBuilder<TOut, TNext> AddAsyncStep<TNext>(
         Func<TOut, IProduceContext, ValueTask<TNext>> action)
     {
         var nextStep = new ProducePipelineStepBuilder<TOut, TNext>(action);

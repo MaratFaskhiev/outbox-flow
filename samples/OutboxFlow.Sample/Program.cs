@@ -68,7 +68,7 @@ public static class Program
                                     Value = message.Value
                                 })
                                 // Serialize the prototype model to a byte array
-                                .SerializeToProtobuf()
+                                .SerializeWithProtobuf()
                                 // Set the message destination
                                 .SetDestination("topic")
                                 // Save the message to a storage
@@ -82,9 +82,9 @@ public static class Program
                             .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
                             // Configure the default pipeline for outbox messages.
                             // Default route will be used for all destination which are not configured explicitly
-                            .AddDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
+                            .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
                     )
-                );
+            );
 
         services.AddScoped<LoggingMiddleware>();
 

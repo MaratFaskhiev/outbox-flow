@@ -10,11 +10,11 @@ namespace OutboxFlow.Produce.Configuration;
 public interface IProducePipelineStepBuilder<TIn, TOut> : IPipelineStepBuilder<IProduceContext, TIn>
 {
     /// <summary>
-    /// Adds a step to the pipeline.
+    /// Adds an asynchronous step to the pipeline.
     /// </summary>
     /// <param name="action">Step.</param>
     /// <typeparam name="TNext">Output parameter type.</typeparam>
-    IProducePipelineStepBuilder<TOut, TNext> AddStep<TNext>(Func<TOut, IProduceContext, ValueTask<TNext>> action);
+    IProducePipelineStepBuilder<TOut, TNext> AddAsyncStep<TNext>(Func<TOut, IProduceContext, ValueTask<TNext>> action);
 
     /// <summary>
     /// Adds a synchronous step to the pipeline.

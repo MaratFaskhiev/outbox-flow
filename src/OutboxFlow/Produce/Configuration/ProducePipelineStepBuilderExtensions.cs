@@ -9,59 +9,59 @@ namespace OutboxFlow.Produce.Configuration;
 public static class ProducePipelineStepBuilderExtensions
 {
     /// <summary>
-    /// Adds a middleware to the pipeline.
+    /// Adds an asynchronous middleware to the pipeline.
     /// </summary>
     /// <param name="step">Step.</param>
     /// <typeparam name="TMiddleware">Middleware type.</typeparam>
     /// <typeparam name="T">Current step message type.</typeparam>
-    public static IProducePipelineStepBuilder<T, T> AddStep<TMiddleware, T>(
+    public static IProducePipelineStepBuilder<T, T> AddAsyncStep<TMiddleware, T>(
         this IProducePipelineStepBuilder<T, T> step)
-        where TMiddleware : IProduceMiddleware<T, T>
+        where TMiddleware : IProduceAsyncMiddleware<T, T>
     {
-        return step.AddStep(async (message, context) =>
+        return step.AddAsyncStep(async (message, context) =>
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
 
-            return await middleware.InvokeAsync(message, context).ConfigureAwait(false);
+            return await middleware.RunAsync(message, context).ConfigureAwait(false);
         });
     }
 
     /// <summary>
-    /// Adds a middleware to the pipeline.
+    /// Adds an asynchronous middleware to the pipeline.
     /// </summary>
     /// <param name="step">Step.</param>
     /// <typeparam name="TMiddleware">Middleware type.</typeparam>
     /// <typeparam name="TIn">Current step input message type.</typeparam>
     /// <typeparam name="TOut">Current step output message type.</typeparam>
-    public static IProducePipelineStepBuilder<TOut, TOut> AddStep<TMiddleware, TIn, TOut>(
+    public static IProducePipelineStepBuilder<TOut, TOut> AddAsyncStep<TMiddleware, TIn, TOut>(
         this IProducePipelineStepBuilder<TIn, TOut> step)
-        where TMiddleware : IProduceMiddleware<TOut, TOut>
+        where TMiddleware : IProduceAsyncMiddleware<TOut, TOut>
     {
-        return step.AddStep(async (message, context) =>
+        return step.AddAsyncStep(async (message, context) =>
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
 
-            return await middleware.InvokeAsync(message, context).ConfigureAwait(false);
+            return await middleware.RunAsync(message, context).ConfigureAwait(false);
         });
     }
 
     /// <summary>
-    /// Adds a middleware to the pipeline.
+    /// Adds an asynchronous middleware to the pipeline.
     /// </summary>
     /// <param name="step">Step.</param>
     /// <typeparam name="TMiddleware">Middleware type.</typeparam>
     /// <typeparam name="TIn">Current step input message type.</typeparam>
     /// <typeparam name="TOut">Current step output message type.</typeparam>
     /// <typeparam name="TNext">Middleware output parameter type.</typeparam>
-    public static IProducePipelineStepBuilder<TOut, TNext> AddStep<TMiddleware, TIn, TOut, TNext>(
+    public static IProducePipelineStepBuilder<TOut, TNext> AddAsyncStep<TMiddleware, TIn, TOut, TNext>(
         this IProducePipelineStepBuilder<TIn, TOut> step)
-        where TMiddleware : IProduceMiddleware<TOut, TNext>
+        where TMiddleware : IProduceAsyncMiddleware<TOut, TNext>
     {
-        return step.AddStep(async (message, context) =>
+        return step.AddAsyncStep(async (message, context) =>
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
 
-            return await middleware.InvokeAsync(message, context).ConfigureAwait(false);
+            return await middleware.RunAsync(message, context).ConfigureAwait(false);
         });
     }
 
@@ -79,7 +79,7 @@ public static class ProducePipelineStepBuilderExtensions
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
 
-            return middleware.Invoke(message, context);
+            return middleware.Run(message, context);
         });
     }
 
@@ -98,7 +98,7 @@ public static class ProducePipelineStepBuilderExtensions
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
 
-            return middleware.Invoke(message, context);
+            return middleware.Run(message, context);
         });
     }
 
@@ -118,7 +118,7 @@ public static class ProducePipelineStepBuilderExtensions
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
 
-            return middleware.Invoke(message, context);
+            return middleware.Run(message, context);
         });
     }
 
@@ -165,7 +165,7 @@ public static class ProducePipelineStepBuilderExtensions
     public static IProducePipelineStepBuilder<TOut, TOut> Save<TIn, TOut>(
         this IProducePipelineStepBuilder<TIn, TOut> step)
     {
-        return step.AddStep(async (message, context) =>
+        return step.AddAsyncStep(async (message, context) =>
         {
             var storage = context.ServiceProvider.GetRequiredService<IOutboxStorage>();
             await storage.SaveAsync(context).ConfigureAwait(false);

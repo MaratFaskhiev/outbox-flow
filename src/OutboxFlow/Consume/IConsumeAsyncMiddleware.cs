@@ -7,6 +7,6 @@ namespace OutboxFlow.Consume;
 /// </summary>
 /// <typeparam name="TIn">Input message type.</typeparam>
 /// <typeparam name="TOut">Output message type.</typeparam>
-public interface IConsumeMiddleware<TIn, TOut> : IMiddleware<IConsumeContext, TIn, TOut>
+public interface IConsumeAsyncMiddleware<TIn, TOut> : IAsyncMiddleware<IConsumeContext, TIn, TOut>
 {
 }

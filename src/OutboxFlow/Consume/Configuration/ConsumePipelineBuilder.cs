@@ -15,7 +15,7 @@ public sealed class ConsumePipelineBuilder : IConsumePipelineBuilder
     }
 
     /// <inheritdoc />
-    public IConsumePipelineStepBuilder<IOutboxMessage, TOut> AddStep<TOut>(
+    public IConsumePipelineStepBuilder<IOutboxMessage, TOut> AddAsyncStep<TOut>(
         Func<IOutboxMessage, IConsumeContext, ValueTask<TOut>> action)
     {
         if (_step != null) throw new InvalidOperationException("The first step is already added.");

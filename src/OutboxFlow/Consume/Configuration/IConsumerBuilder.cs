@@ -38,7 +38,7 @@ public interface IConsumerBuilder
     /// Configures the default consume pipeline.
     /// </summary>
     /// <param name="configure">Configure action.</param>
-    IConsumerBuilder AddDefaultRoute(Action<IConsumePipelineBuilder> configure);
+    IConsumerBuilder SetDefaultRoute(Action<IConsumePipelineBuilder> configure);
 
     /// <summary>
     /// Configures consume pipeline for the specified destination.

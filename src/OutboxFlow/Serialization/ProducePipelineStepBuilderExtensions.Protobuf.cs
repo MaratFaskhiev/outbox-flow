@@ -14,7 +14,7 @@ public static partial class ProducePipelineStepBuilderExtensions
     /// <param name="step">Step.</param>
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
-    public static IProducePipelineStepBuilder<TOut, TOut> SerializeToProtobuf<TIn, TOut>(
+    public static IProducePipelineStepBuilder<TOut, TOut> SerializeWithProtobuf<TIn, TOut>(
         this IProducePipelineStepBuilder<TIn, TOut> step) where TOut : IMessage
     {
         return step.AddSyncStep((message, context) =>
@@ -32,7 +32,7 @@ public static partial class ProducePipelineStepBuilderExtensions
     /// <typeparam name="TIn">Step input message type.</typeparam>
     /// <typeparam name="TOut">Step output message type.</typeparam>
     /// <typeparam name="TKey">Message key type.</typeparam>
-    public static IProducePipelineStepBuilder<TOut, TOut> SerializeKeyToProtobuf<TIn, TOut, TKey>(
+    public static IProducePipelineStepBuilder<TOut, TOut> SerializeKeyWithProtobuf<TIn, TOut, TKey>(
         this IProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
         where TKey : IMessage
     {
