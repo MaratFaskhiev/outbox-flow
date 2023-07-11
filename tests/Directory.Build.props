@@ -1,0 +1,17 @@
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+
+        <AnalysisMode>All</AnalysisMode>
+        <!-- CA1062: Validate arguments of public methods -->
+        <!-- CA1848: Use the LoggerMessage delegates -->
+        <!-- CA1707: Identifiers should not contain underscores -->
+        <!-- CA2007: Do not directly await a Task -->
+        <NoWarn>CA1062;CA1848;CA1707;CA2007</NoWarn>
+    </PropertyGroup>
+</Project>

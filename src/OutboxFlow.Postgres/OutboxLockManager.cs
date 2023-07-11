@@ -34,40 +34,30 @@ where expire_at < now() or id = @id;
     {
         var connection = EnsureConnection(transaction);
 
-        var countCommand = connection.CreateCommand();
-        await using (countCommand.ConfigureAwait(false))
+        using var countCommand = connection.CreateCommand();
+        countCommand.CommandText = CountCommandText;
+        try
         {
-            countCommand.CommandText = CountCommandText;
-
-            try
-            {
-                var count = (long?) await countCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                if (count > 0) return null;
-            }
-            catch (PostgresException exception) when (exception.SqlState == LockNotAvailableCode)
-            {
-                return null;
-            }
+            var count = (long?) await countCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            if (count > 0) return null;
+        }
+        catch (PostgresException exception) when (exception.SqlState == LockNotAvailableCode)
+        {
+            return null;
         }
 
-        var insertCommand = connection.CreateCommand();
-        await using (insertCommand.ConfigureAwait(false))
-        {
-            insertCommand.CommandText = InsertCommandText;
-            insertCommand.Parameters.AddWithValue("@timeout", lockTimeout);
+        using var insertCommand = connection.CreateCommand();
+        insertCommand.CommandText = InsertCommandText;
+        insertCommand.Parameters.AddWithValue("@timeout", lockTimeout);
 
-            var reader = await insertCommand
-                .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
-                .ConfigureAwait(false);
-            await using (reader.ConfigureAwait(false))
-            {
-                await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-                var id = await reader.GetFieldValueAsync<Guid>(0, cancellationToken).ConfigureAwait(false);
-                var expireAt = await reader.GetFieldValueAsync<DateTime>(1, cancellationToken).ConfigureAwait(false);
+        await using var reader = await insertCommand
+            .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
+            .ConfigureAwait(false);
+        await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+        var id = await reader.GetFieldValueAsync<Guid>(0, cancellationToken).ConfigureAwait(false);
+        var expireAt = await reader.GetFieldValueAsync<DateTime>(1, cancellationToken).ConfigureAwait(false);
 
-                return new OutboxLock(id, expireAt);
-            }
-        }
+        return new OutboxLock(id, expireAt);
     }
 
     /// <inheritdoc />
@@ -76,14 +66,11 @@ where expire_at < now() or id = @id;
     {
         var connection = EnsureConnection(transaction);
 
-        var command = connection.CreateCommand();
-        await using (command.ConfigureAwait(false))
-        {
-            command.CommandText = ReleaseCommandText;
-            command.Parameters.AddWithValue("@id", outboxLock.Id);
+        using var command = connection.CreateCommand();
+        command.CommandText = ReleaseCommandText;
+        command.Parameters.AddWithValue("@id", outboxLock.Id);
 
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static NpgsqlConnection EnsureConnection(IDbTransaction transaction)

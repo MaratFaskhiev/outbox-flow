@@ -8,7 +8,12 @@ public sealed class ConsumePipelineRegistry : IConsumePipelineRegistry
     private readonly IPipelineStep<IConsumeContext, IOutboxMessage>? _defaultPipeline;
     private readonly Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>> _pipelines;
 
-    internal ConsumePipelineRegistry(
+    /// <summary>
+    /// Ctor.
+    /// </summary>
+    /// <param name="pipelines">Pipelines by destination.</param>
+    /// <param name="defaultPipeline">Default pipeline.</param>
+    public ConsumePipelineRegistry(
         Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>> pipelines,
         IPipelineStep<IConsumeContext, IOutboxMessage>? defaultPipeline)
     {

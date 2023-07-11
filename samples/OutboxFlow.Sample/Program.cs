@@ -81,7 +81,7 @@ public static class Program
                             // Use PostgreSQL as an underlying storage
                             .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
                             // Configure the default pipeline for outbox messages.
-                            // Default route will be used for all destination which are not configured explicitly
+                            // Default route will be used for all destinations which are not configured explicitly
                             .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
                     )
             );
