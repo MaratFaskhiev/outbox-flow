@@ -11,6 +11,7 @@ namespace OutboxFlow.Consume;
 /// </summary>
 public sealed class OutboxConsumerService : BackgroundService
 {
+    private readonly IClock _clock;
     private readonly ILogger<OutboxConsumerService> _logger;
     private readonly IOptionsMonitor<OutboxStorageConsumerOptions> _options;
     private readonly IServiceScopeFactory _serviceScopeFactory;
@@ -20,14 +21,17 @@ public sealed class OutboxConsumerService : BackgroundService
     /// </summary>
     /// <param name="serviceScopeFactory">Service scope factory.</param>
     /// <param name="options">Configuration options.</param>
+    /// <param name="clock">Clock.</param>
     /// <param name="logger">Logger.</param>
     public OutboxConsumerService(
         IServiceScopeFactory serviceScopeFactory,
         IOptionsMonitor<OutboxStorageConsumerOptions> options,
+        IClock clock,
         ILogger<OutboxConsumerService> logger)
     {
         _serviceScopeFactory = serviceScopeFactory;
         _options = options;
+        _clock = clock;
         _logger = logger;
     }
 
@@ -56,9 +60,9 @@ public sealed class OutboxConsumerService : BackgroundService
                 }
 
                 if (!(consumeResult?.IsSuccessful ?? false))
-                    await Task.Delay(_options.CurrentValue.Timeout, stoppingToken).ConfigureAwait(false);
+                    await _clock.Delay(_options.CurrentValue.Timeout, stoppingToken).ConfigureAwait(false);
                 else if (consumeResult.Count != _options.CurrentValue.BatchSize)
-                    await Task.Delay(_options.CurrentValue.ConsumeDelay, stoppingToken).ConfigureAwait(false);
+                    await _clock.Delay(_options.CurrentValue.ConsumeDelay, stoppingToken).ConfigureAwait(false);
             }
         }
         finally

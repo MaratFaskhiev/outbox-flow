@@ -43,6 +43,8 @@ public sealed class ConsumePipelineStepBuilder<TIn, TOut> : IConsumePipelineStep
     public IConsumePipelineStepBuilder<TOut, TNext> AddAsyncStep<TNext>(
         Func<TOut, IConsumeContext, ValueTask<TNext>> action)
     {
+        if (_nextStep != null) throw new InvalidOperationException("The next step is already added.");
+
         var nextStep = new ConsumePipelineStepBuilder<TOut, TNext>(action);
         _nextStep = nextStep;
         return nextStep;
@@ -52,6 +54,8 @@ public sealed class ConsumePipelineStepBuilder<TIn, TOut> : IConsumePipelineStep
     public IConsumePipelineStepBuilder<TOut, TNext> AddSyncStep<TNext>(
         Func<TOut, IConsumeContext, TNext> action)
     {
+        if (_nextStep != null) throw new InvalidOperationException("The next step is already added.");
+
         var nextStep = new ConsumePipelineStepBuilder<TOut, TNext>(action);
         _nextStep = nextStep;
         return nextStep;

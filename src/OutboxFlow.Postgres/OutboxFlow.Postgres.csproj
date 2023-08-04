@@ -12,11 +12,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\OutboxFlow\OutboxFlow.csproj"/>
+        <ProjectReference Include="..\OutboxFlow\OutboxFlow.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Npgsql"/>
+        <PackageReference Include="Npgsql" />
     </ItemGroup>
 
 </Project>

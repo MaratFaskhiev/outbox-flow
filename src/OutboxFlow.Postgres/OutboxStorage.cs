@@ -35,45 +35,39 @@ where id = any(@ids);";
 
         var connection = EnsureConnection(transaction);
 
-        var command = connection.CreateCommand();
-        await using (command.ConfigureAwait(false))
+        using var command = connection.CreateCommand();
+        command.CommandText = FetchCommandText;
+
+        command.Parameters.AddWithValue("batch_size", batchSize);
+
+        await using var reader = await command
+            .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
+            .ConfigureAwait(false);
+        var result = new List<IOutboxMessage>(batchSize);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            command.CommandText = FetchCommandText;
+            var id = await reader.GetFieldValueAsync<long>(0, cancellationToken).ConfigureAwait(false);
 
-            command.Parameters.AddWithValue("batch_size", batchSize);
+            string? destination = null;
+            if (!await reader.IsDBNullAsync(1, cancellationToken).ConfigureAwait(false))
+                destination = await reader.GetFieldValueAsync<string>(1, cancellationToken)
+                    .ConfigureAwait(false);
 
-            var reader = await command
-                .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
-                .ConfigureAwait(false);
-            await using (reader.ConfigureAwait(false))
-            {
-                var result = new List<IOutboxMessage>(batchSize);
-                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    var id = await reader.GetFieldValueAsync<long>(0, cancellationToken).ConfigureAwait(false);
+            byte[]? key = null;
+            if (!await reader.IsDBNullAsync(2, cancellationToken).ConfigureAwait(false))
+                key = await reader.GetFieldValueAsync<byte[]>(2, cancellationToken)
+                    .ConfigureAwait(false);
 
-                    string? destination = null;
-                    if (!await reader.IsDBNullAsync(1, cancellationToken).ConfigureAwait(false))
-                        destination = await reader.GetFieldValueAsync<string>(1, cancellationToken)
-                            .ConfigureAwait(false);
+            var message = new OutboxMessage(
+                id,
+                destination,
+                key,
+                await reader.GetFieldValueAsync<byte[]>(3, cancellationToken).ConfigureAwait(false));
 
-                    byte[]? key = null;
-                    if (!await reader.IsDBNullAsync(2, cancellationToken).ConfigureAwait(false))
-                        key = await reader.GetFieldValueAsync<byte[]>(2, cancellationToken)
-                            .ConfigureAwait(false);
-
-                    var message = new OutboxMessage(
-                        id,
-                        destination,
-                        key,
-                        await reader.GetFieldValueAsync<byte[]>(3, cancellationToken).ConfigureAwait(false));
-
-                    result.Add(message);
-                }
-
-                return result;
-            }
+            result.Add(message);
         }
+
+        return result;
     }
 
     /// <inheritdoc />
@@ -86,18 +80,15 @@ where id = any(@ids);";
 
         var connection = EnsureConnection(context.Transaction);
 
-        var command = connection.CreateCommand();
-        await using (command.ConfigureAwait(false))
-        {
-            command.CommandText = InsertCommandText;
+        using var command = connection.CreateCommand();
+        command.CommandText = InsertCommandText;
 
-            command.Parameters.AddWithValue("destination", (object?) context.Destination ?? DBNull.Value);
-            command.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) context.Key ?? DBNull.Value);
-            command.Parameters.AddWithValue("value", context.Value);
-            command.Parameters.AddWithValue("created_at", DateTime.UtcNow);
+        command.Parameters.AddWithValue("destination", (object?) context.Destination ?? DBNull.Value);
+        command.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) context.Key ?? DBNull.Value);
+        command.Parameters.AddWithValue("value", context.Value);
+        command.Parameters.AddWithValue("created_at", DateTime.UtcNow);
 
-            await command.ExecuteNonQueryAsync(context.CancellationToken).ConfigureAwait(false);
-        }
+        await command.ExecuteNonQueryAsync(context.CancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -109,15 +100,12 @@ where id = any(@ids);";
         if (outboxMessages.Any(x => x is not OutboxMessage))
             throw new InvalidOperationException($"{typeof(OutboxMessage).FullName} expected.");
 
-        var command = connection.CreateCommand();
-        await using (command.ConfigureAwait(false))
-        {
-            command.CommandText = DeleteCommandText;
+        using var command = connection.CreateCommand();
+        command.CommandText = DeleteCommandText;
 
-            command.Parameters.AddWithValue("@ids", outboxMessages.Select(x => ((OutboxMessage) x).Id).ToArray());
+        command.Parameters.AddWithValue("@ids", outboxMessages.Select(x => ((OutboxMessage) x).Id).ToArray());
 
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static NpgsqlConnection EnsureConnection(IDbTransaction transaction)

@@ -47,6 +47,8 @@ public sealed class ProducePipelineStepBuilder<TIn, TOut> : IProducePipelineStep
     public IProducePipelineStepBuilder<TOut, TNext> AddAsyncStep<TNext>(
         Func<TOut, IProduceContext, ValueTask<TNext>> action)
     {
+        if (_nextStep != null) throw new InvalidOperationException("The next step is already added.");
+
         var nextStep = new ProducePipelineStepBuilder<TOut, TNext>(action);
         _nextStep = nextStep;
         return nextStep;
@@ -60,6 +62,8 @@ public sealed class ProducePipelineStepBuilder<TIn, TOut> : IProducePipelineStep
     public IProducePipelineStepBuilder<TOut, TNext> AddSyncStep<TNext>(
         Func<TOut, IProduceContext, TNext> action)
     {
+        if (_nextStep != null) throw new InvalidOperationException("The next step is already added.");
+
         var nextStep = new ProducePipelineStepBuilder<TOut, TNext>(action);
         _nextStep = nextStep;
         return nextStep;
