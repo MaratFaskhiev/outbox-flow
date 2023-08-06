@@ -1,4 +1,4 @@
-# OutboxFlow
+# OutboxFlow [![build and test](https://github.com/MaratFaskhiev/outbox-flow/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/MaratFaskhiev/outbox-flow/actions/workflows/build-and-test.yml)
 
 ## Introduction
 Simple implementation of the transactional outbox based on the pipeline pattern.
