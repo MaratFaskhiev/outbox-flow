@@ -2,6 +2,7 @@ name: build and test
 
 on:
   push:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -15,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -26,9 +27,29 @@ jobs:
 
     - name: Install dependencies
       run: dotnet restore
-      
+
     - name: Build
       run: dotnet build --configuration Release --no-restore
-    
+
     - name: Test
-      run: dotnet test --no-restore --verbosity normal
+      run: dotnet test --no-restore --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+    - name: Code Coverage Report
+      if: github.event_name == 'pull_request'
+      run: |
+        dotnet tool install -g dotnet-reportgenerator-globaltool
+        reportgenerator -reports:coverage/**/coverage.cobertura.xml -targetdir:CodeCoverage -reporttypes:'HtmlInline;MarkdownSummaryGithub'
+
+    - name: Add Coverage PR Comment
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: github.event_name == 'pull_request'
+      with:
+        recreate: true
+        path: CodeCoverage/SummaryGithub.md
+
+    - name: Upload coverage report artifact
+      uses: actions/upload-artifact@v3.1.2
+      if: github.event_name == 'pull_request'
+      with:
+        name: CoverageReport
+        path: CodeCoverage/*

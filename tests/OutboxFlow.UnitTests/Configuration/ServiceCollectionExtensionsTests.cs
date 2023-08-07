@@ -7,12 +7,7 @@ namespace OutboxFlow.UnitTests.Configuration;
 
 public sealed class ServiceCollectionExtensionsTests : IDisposable
 {
-    private readonly Mock<IServiceCollection> _services;
-
-    public ServiceCollectionExtensionsTests()
-    {
-        _services = new Mock<IServiceCollection>(MockBehavior.Strict);
-    }
+    private readonly Mock<IServiceCollection> _services = new(MockBehavior.Strict);
 
     public void Dispose()
     {
