@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">Collection of service descriptors.</param>
     public static IServiceCollection AddKafka(this IServiceCollection services)
     {
+        services.TryAddSingleton<IKafkaProducerBuilder, KafkaProducerBuilder>();
         services.TryAddSingleton<IKafkaProducerRegistry, KafkaProducerRegistry>();
 
         return services;
