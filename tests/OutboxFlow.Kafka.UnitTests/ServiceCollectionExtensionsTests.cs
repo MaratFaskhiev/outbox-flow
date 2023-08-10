@@ -19,6 +19,8 @@ public sealed class ServiceCollectionExtensionsTests : IDisposable
         _services.Setup(x => x.Count).Returns(0);
         _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
             d.ServiceType == typeof(IKafkaProducerRegistry) && d.ImplementationType == typeof(KafkaProducerRegistry))));
+        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
+            d.ServiceType == typeof(IKafkaProducerBuilder) && d.ImplementationType == typeof(KafkaProducerBuilder))));
 
         _services.Object.AddKafka();
     }
