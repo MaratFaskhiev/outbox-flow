@@ -1,5 +1,4 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+// For format details, see https://aka.ms/devcontainer.json.
 {
 	"name": "Outbox-Flow Devcontainer",
 	"build": {
@@ -71,10 +70,14 @@
 				// Management tool for postgres and kafka
 				"cweijan.vscode-postgresql-client2",
 				// Protobuf files support
-				"zxh404.vscode-proto3"
+				"zxh404.vscode-proto3",
+				// Docker (do not upgrade as later versions do not work with Podman for now)
+				"ms-azuretools.vscode-docker@1.22.2"
 			],
 			"settings": {
-				"extensions.ignoreRecommendations": true
+				"extensions.ignoreRecommendations": true,
+				"docker.dockerPath": "/usr/bin/podman",
+				"docker.composeCommand": "podman-compose"
 			}
 		}
 	},
@@ -85,5 +88,8 @@
 	],
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	"remoteUser": "${localEnv:USER:dev}"
+	"remoteUser": "${localEnv:USER:dev}",
+
+	// Tells VS Code not to override CMD and ENTRYPOINT properties defined in the Containerfile
+	"overrideCommand": false	
 }
