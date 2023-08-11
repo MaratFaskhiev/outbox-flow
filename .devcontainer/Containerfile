@@ -35,6 +35,8 @@ ENV _CONTAINERS_USERNS_CONFIGURED=""
 
 # Socket path for podman
 ENV XDG_RUNTIME_DIR=/run/user/1000
+ENV DOCKER_HOST=unix:///run/user/1000/podman/podman.sock
 
 USER ${USER_NAME}
-CMD ["sleep", "infinity"]
+
+CMD ["podman", "system", "service", "--time", "0"]
