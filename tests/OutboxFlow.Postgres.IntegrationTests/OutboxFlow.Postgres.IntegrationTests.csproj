@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <ItemGroup>
+        <PackageReference Include="Npgsql" />
+        <PackageReference Include="Testcontainers.PostgreSql" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\OutboxFlow.Postgres\OutboxFlow.Postgres.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="..\..\scripts\postgres.sql">
+            <Link>postgres.sql</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+</Project>
