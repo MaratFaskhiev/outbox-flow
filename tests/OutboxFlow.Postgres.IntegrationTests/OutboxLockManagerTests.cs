@@ -15,14 +15,24 @@ public sealed class OutboxLockManagerTests : IClassFixture<DatabaseFixture>
     }
 
     [Fact]
-    public async Task LockAsync_NoLock_ReturnsLockRecord()
+    public async Task LockWorkflowTest()
     {
         await using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync();
         await using var transaction = await connection.BeginTransactionAsync();
 
-        var outboxLock = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
+        var outboxLock1 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
 
-        Assert.NotNull(outboxLock);
+        Assert.NotNull(outboxLock1);
+
+        var outboxLock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
+
+        Assert.Null(outboxLock2);
+
+        await _manager.ReleaseAsync(outboxLock1, transaction, CancellationToken.None);
+
+        var outboxLock3 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
+
+        Assert.NotNull(outboxLock3);
     }
 }
