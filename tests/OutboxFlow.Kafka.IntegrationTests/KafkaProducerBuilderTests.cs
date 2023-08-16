@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Xunit;
 
 namespace OutboxFlow.Kafka.IntegrationTests;
@@ -21,21 +22,27 @@ public sealed class KafkaProducerBuilderTests : IClassFixture<KafkaFixture>
         var key = Guid.NewGuid();
         var value = Guid.NewGuid();
 
-        var consumerConfig = new ConsumerConfig
+        using var adminClient = new AdminClientBuilder(new AdminClientConfig
+        {
+            BootstrapServers = _bootstrapAddress
+        }).Build();
+        await adminClient.CreateTopicsAsync(new[]
+        {
+            new TopicSpecification {Name = Topic}
+        });
+
+        using var consumer = new ConsumerBuilder<byte[], byte[]>(new ConsumerConfig
         {
             BootstrapServers = _bootstrapAddress,
             GroupId = "test_consumer",
             AutoOffsetReset = AutoOffsetReset.Earliest
-        };
-        var producerConfig = new ProducerConfig
-        {
-            BootstrapServers = _bootstrapAddress
-        };
-
-        using var consumer = new ConsumerBuilder<byte[], byte[]>(consumerConfig).Build();
+        }).Build();
         consumer.Subscribe(Topic);
 
-        using var producer = _builder.Create(producerConfig);
+        using var producer = _builder.Create(new ProducerConfig
+        {
+            BootstrapServers = _bootstrapAddress
+        });
         var kafkaMessage = new Message<byte[], byte[]>
         {
             Key = key.ToByteArray(),
