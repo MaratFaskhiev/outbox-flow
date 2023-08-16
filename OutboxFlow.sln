@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutboxFlow.Postgres.UnitTes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutboxFlow.Postgres.IntegrationTests", "tests\OutboxFlow.Postgres.IntegrationTests\OutboxFlow.Postgres.IntegrationTests.csproj", "{6D7342FE-FA5F-4B39-8B2E-5A6768E5AFBE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutboxFlow.Kafka.IntegrationTests", "tests\OutboxFlow.Kafka.IntegrationTests\OutboxFlow.Kafka.IntegrationTests.csproj", "{9615278B-196E-45F2-BD7C-7661791C8AAF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,10 @@ Global
 		{6D7342FE-FA5F-4B39-8B2E-5A6768E5AFBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D7342FE-FA5F-4B39-8B2E-5A6768E5AFBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D7342FE-FA5F-4B39-8B2E-5A6768E5AFBE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9615278B-196E-45F2-BD7C-7661791C8AAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9615278B-196E-45F2-BD7C-7661791C8AAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9615278B-196E-45F2-BD7C-7661791C8AAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9615278B-196E-45F2-BD7C-7661791C8AAF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D6278697-0F74-4B9F-8F9E-F80C2727C144} = {84E2DF44-2377-4C30-91BF-1DA4B227F097}
@@ -81,5 +87,6 @@ Global
 		{D89033C4-3946-4134-9BCD-B33566A7A35C} = {24BDD9EF-C14D-4E64-8366-AF760C70F0BC}
 		{0D4AE587-0560-46DC-BAB6-74E71024380B} = {24BDD9EF-C14D-4E64-8366-AF760C70F0BC}
 		{6D7342FE-FA5F-4B39-8B2E-5A6768E5AFBE} = {24BDD9EF-C14D-4E64-8366-AF760C70F0BC}
+		{9615278B-196E-45F2-BD7C-7661791C8AAF} = {24BDD9EF-C14D-4E64-8366-AF760C70F0BC}
 	EndGlobalSection
 EndGlobal
