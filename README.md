@@ -133,7 +133,6 @@ You can check the complete sample application [here](samples/OutboxFlow.Sample).
 
 ### To Be Done :)
 
-* Unit tests (!)
 * Documentation
 * Entity Framework support
 * OpenTelemetry support

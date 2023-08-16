@@ -5,6 +5,8 @@
     <ItemGroup>
         <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
         <PackageVersion Include="Moq" Version="4.18.4" />
+        <PackageVersion Include="Npgsql" Version="7.0.4" />
+        <PackageVersion Include="Testcontainers.PostgreSql" Version="3.4.0" />
         <PackageVersion Include="xunit" Version="2.4.2" />
         <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
         <PackageVersion Include="coverlet.collector" Version="3.2.0" />
