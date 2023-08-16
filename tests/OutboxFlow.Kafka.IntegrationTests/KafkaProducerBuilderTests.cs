@@ -1,5 +1,4 @@
 ﻿using Confluent.Kafka;
-using Confluent.Kafka.Admin;
 using Xunit;
 
 namespace OutboxFlow.Kafka.IntegrationTests;
@@ -22,23 +21,6 @@ public sealed class KafkaProducerBuilderTests : IClassFixture<KafkaFixture>
         var key = Guid.NewGuid();
         var value = Guid.NewGuid();
 
-        using var adminClient = new AdminClientBuilder(new AdminClientConfig
-        {
-            BootstrapServers = _bootstrapAddress
-        }).Build();
-        await adminClient.CreateTopicsAsync(new[]
-        {
-            new TopicSpecification {Name = Topic}
-        });
-
-        using var consumer = new ConsumerBuilder<byte[], byte[]>(new ConsumerConfig
-        {
-            BootstrapServers = _bootstrapAddress,
-            GroupId = "test_consumer",
-            AutoOffsetReset = AutoOffsetReset.Earliest
-        }).Build();
-        consumer.Subscribe(Topic);
-
         using var producer = _builder.Create(new ProducerConfig
         {
             BootstrapServers = _bootstrapAddress
@@ -48,11 +30,19 @@ public sealed class KafkaProducerBuilderTests : IClassFixture<KafkaFixture>
             Key = key.ToByteArray(),
             Value = value.ToByteArray()
         };
-        var result = await producer.ProduceAsync(Topic, kafkaMessage, CancellationToken.None);
+        var result = await producer.ProduceAsync(Topic, kafkaMessage);
 
         Assert.Equal(PersistenceStatus.Persisted, result.Status);
 
-        var consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
+        using var consumer = new ConsumerBuilder<byte[], byte[]>(new ConsumerConfig
+        {
+            BootstrapServers = _bootstrapAddress,
+            GroupId = "test_consumer",
+            AutoOffsetReset = AutoOffsetReset.Earliest,
+            EnablePartitionEof = true
+        }).Build();
+        consumer.Subscribe(Topic);
+        var consumeResult = consumer.Consume(TimeSpan.FromSeconds(3));
 
         Assert.NotNull(consumeResult);
         Assert.Equal(key, new Guid(consumeResult.Message.Key));
