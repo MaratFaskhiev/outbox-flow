@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <PackageId>OutboxFlow</PackageId>
-        <Version>0.0.1-alpha</Version>
         <Authors>Marat Faskhiev</Authors>
         <PackageTags>outbox</PackageTags>
         <Description>Simple transactional outbox pattern implementation based on the pipeline pattern</Description>

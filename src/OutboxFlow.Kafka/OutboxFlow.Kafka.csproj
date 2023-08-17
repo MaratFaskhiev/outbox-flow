@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <PackageId>OutboxFlow.Kafka</PackageId>
-        <Version>0.0.1-alpha</Version>
         <Authors>Marat Faskhiev</Authors>
         <PackageTags>outbox,kafka</PackageTags>
         <Description>Extension methods for setting up Apache Kafka as an outbox destination</Description>
