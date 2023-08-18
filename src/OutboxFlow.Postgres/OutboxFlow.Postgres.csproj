@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <PackageId>OutboxFlow.Postgres</PackageId>
-        <Version>0.0.1-alpha</Version>
         <Authors>Marat Faskhiev</Authors>
         <PackageTags>outbox,postgres</PackageTags>
         <Description>Extension methods for setting up PostgreSQL as an outbox storage</Description>
