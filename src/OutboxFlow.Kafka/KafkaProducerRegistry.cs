@@ -6,31 +6,32 @@ namespace OutboxFlow.Kafka;
 /// <inheritdoc cref="OutboxFlow.Kafka.IKafkaProducerRegistry" />
 public sealed class KafkaProducerRegistry : IKafkaProducerRegistry, IDisposable
 {
-    private readonly IKafkaProducerBuilder _builder;
     private readonly ConcurrentDictionary<ProducerConfig, Lazy<IProducer<byte[], byte[]>>> _producers = new();
-
-    /// <summary>
-    /// Ctor.
-    /// </summary>
-    /// <param name="builder">Kafka producer builder.</param>
-    public KafkaProducerRegistry(IKafkaProducerBuilder builder)
-    {
-        _builder = builder;
-    }
 
     /// <inheritdoc />
     public void Dispose()
     {
-        foreach (var producer in _producers.Values.Where(x => x.IsValueCreated)) producer.Value.Dispose();
+        foreach (var producer in _producers.Values.Where(x => x.IsValueCreated))
+        {
+            producer.Value.Flush();
+            producer.Value.Dispose();
+        }
 
         _producers.Clear();
     }
 
     /// <inheritdoc />
-    public IProducer<byte[], byte[]> GetOrCreate(ProducerConfig producerConfig)
+    public IProducer<byte[], byte[]> GetOrCreate(IKafkaProducerBuilder producerBuilder, ProducerConfig producerConfig)
     {
         return _producers.GetOrAdd(producerConfig, cfg => new Lazy<IProducer<byte[], byte[]>>(() =>
-            _builder.Create(cfg)
+            producerBuilder.Create(cfg)
         )).Value;
+    }
+
+    /// <inheritdoc />
+    public void Remove(ProducerConfig producerConfig)
+    {
+        // Do not dispose producer because it can be in use. It will be collected by GC
+        _producers.TryRemove(producerConfig, out _);
     }
 }

@@ -54,7 +54,7 @@ public sealed class OutboxConsumerService : BackgroundService
 
                     consumeResult = await consumer.ConsumeAsync(stoppingToken).ConfigureAwait(false);
                 }
-                catch (Exception e) when (e is not OperationCanceledException)
+                catch (Exception e) when (e is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
                 {
                     _logger.LogError(e, "Failed to process outbox messages.");
                 }

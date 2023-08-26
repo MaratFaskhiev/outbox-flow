@@ -16,23 +16,52 @@ public static class ConsumePipelineStepBuilderExtensions
     /// <param name="pipeline">Pipeline.</param>
     /// <param name="producerConfig">Producer config.</param>
     /// <typeparam name="TIn">Current step input message type.</typeparam>
-    public static IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage> SendToKafka<TIn>(
+    /// <typeparam name="TKafkaProducerBuilder">Producer builder type.</typeparam>
+    public static IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage> SendToKafka<TIn, TKafkaProducerBuilder>(
         this IConsumePipelineStepBuilder<TIn, IOutboxMessage> pipeline,
         ProducerConfig producerConfig)
+        where TKafkaProducerBuilder: IKafkaProducerBuilder
     {
         return pipeline.AddAsyncStep(async (message, context) =>
         {
             var producerRegistry = context.ServiceProvider.GetRequiredService<IKafkaProducerRegistry>();
-            var producer = producerRegistry.GetOrCreate(producerConfig);
+            var producerBuilder = context.ServiceProvider.GetRequiredService<TKafkaProducerBuilder>();
+            var producer = producerRegistry.GetOrCreate(producerBuilder, producerConfig);
 
             var kafkaMessage = new Message<byte[], byte[]>();
             if (message.Key != null)
                 kafkaMessage.Key = message.Key;
             kafkaMessage.Value = message.Value;
-            await producer.ProduceAsync(message.Destination, kafkaMessage, context.CancellationToken)
-                .ConfigureAwait(false);
+            try
+            {
+                await producer.ProduceAsync(message.Destination, kafkaMessage, context.CancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (ProduceException<byte[], byte[]> exception)
+            {
+                if (exception.Error.IsFatal)
+                {
+                    producerRegistry.Remove(producerConfig);
+                    producer.Dispose();
+                }
+
+                throw;
+            }
 
             return message;
         });
+    }
+
+    /// <summary>
+    /// Sends the message to the Kafka topic.
+    /// </summary>
+    /// <param name="pipeline">Pipeline.</param>
+    /// <param name="producerConfig">Producer config.</param>
+    /// <typeparam name="TIn">Current step input message type.</typeparam>
+    public static IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage> SendToKafka<TIn>(
+        this IConsumePipelineStepBuilder<TIn, IOutboxMessage> pipeline,
+        ProducerConfig producerConfig)
+    {
+        return pipeline.SendToKafka<TIn, DefaultKafkaProducerBuilder>(producerConfig);
     }
 }
