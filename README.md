@@ -98,7 +98,12 @@ services
         );
 ```
 
-This code registers a background service that reads and sends outbox messages to the specified destination.
+This code registers a background service that reads and sends outbox messages to the specified destination. `SendToKafka` method tells that it is necessary to send a message to a Kafka topic by using the specified producer configuration.
+
+What should we do to configure Apache Kafka producer?
+* Implement `IKafkaProducerBuilder` interface. [DefaultKafkaProducerBuilder](src/OutboxFlow.Kafka/DefaultKafkaProducerBuilder.cs) can be used as an example
+* Register `IKafkaProducerBuilder` implementation
+* Pass the implementation type as a type parameter to the `SendToKafka` method
 
 Now let's get familiar with the underlying message storage.
 

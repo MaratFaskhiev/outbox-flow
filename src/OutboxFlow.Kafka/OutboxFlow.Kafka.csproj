@@ -11,6 +11,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="OutboxFlow.Kafka.UnitTests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Confluent.Kafka" />
     </ItemGroup>
 

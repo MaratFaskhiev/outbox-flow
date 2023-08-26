@@ -1,18 +1,24 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace OutboxFlow.Kafka.IntegrationTests;
 
-public sealed class KafkaProducerBuilderTests : IClassFixture<KafkaFixture>
+public sealed class KafkaProducerRegistryTests : IClassFixture<KafkaFixture>, IDisposable
 {
     private const string Topic = "test_topic";
     private readonly string _bootstrapAddress;
 
-    private readonly KafkaProducerBuilder _builder = new();
+    private readonly KafkaProducerRegistry _registry = new();
 
-    public KafkaProducerBuilderTests(KafkaFixture kafkaFixture)
+    public KafkaProducerRegistryTests(KafkaFixture kafkaFixture)
     {
         _bootstrapAddress = kafkaFixture.BootstrapAddress;
+    }
+
+    public void Dispose()
+    {
+        _registry.Dispose();
     }
 
     [Fact]
@@ -21,10 +27,12 @@ public sealed class KafkaProducerBuilderTests : IClassFixture<KafkaFixture>
         var key = Guid.NewGuid();
         var value = Guid.NewGuid();
 
-        using var producer = _builder.Create(new ProducerConfig
-        {
-            BootstrapServers = _bootstrapAddress
-        });
+        var producer = _registry.GetOrCreate(
+            new DefaultKafkaProducerBuilder(_registry, NullLogger<DefaultKafkaProducerBuilder>.Instance),
+            new ProducerConfig
+            {
+                BootstrapServers = _bootstrapAddress
+            });
         var kafkaMessage = new Message<byte[], byte[]>
         {
             Key = key.ToByteArray(),
