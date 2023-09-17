@@ -26,6 +26,10 @@ public sealed class OutboxStorageTests : IClassFixture<DatabaseFixture>
         var produceContext = new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
         {
             Destination = "destination",
+            Headers =
+            {
+                {"test_header", "test_header value"}
+            },
             Key = Guid.NewGuid().ToByteArray(),
             Value = Guid.NewGuid().ToByteArray()
         };
@@ -38,6 +42,11 @@ public sealed class OutboxStorageTests : IClassFixture<DatabaseFixture>
         var message = messages.First();
 
         Assert.Equal(produceContext.Destination, message.Destination);
+        Assert.Collection(message.Headers, header =>
+        {
+            Assert.True(produceContext.Headers.ContainsKey(header.Key));
+            Assert.Equal(produceContext.Headers[header.Key], header.Value);
+        });
         Assert.Equal(produceContext.Key, message.Key);
         Assert.Equal(produceContext.Value, message.Value);
 

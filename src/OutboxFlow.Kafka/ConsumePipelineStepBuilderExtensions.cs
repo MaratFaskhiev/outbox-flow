@@ -1,4 +1,5 @@
-﻿using Confluent.Kafka;
+﻿using System.Text;
+using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using OutboxFlow.Consume.Configuration;
 using OutboxFlow.Storage;
@@ -20,7 +21,7 @@ public static class ConsumePipelineStepBuilderExtensions
     public static IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage> SendToKafka<TIn, TKafkaProducerBuilder>(
         this IConsumePipelineStepBuilder<TIn, IOutboxMessage> pipeline,
         ProducerConfig producerConfig)
-        where TKafkaProducerBuilder: IKafkaProducerBuilder
+        where TKafkaProducerBuilder : IKafkaProducerBuilder
     {
         return pipeline.AddAsyncStep(async (message, context) =>
         {
@@ -29,6 +30,9 @@ public static class ConsumePipelineStepBuilderExtensions
             var producer = producerRegistry.GetOrCreate(producerBuilder, producerConfig);
 
             var kafkaMessage = new Message<byte[], byte[]>();
+            if (message.Headers.Any()) kafkaMessage.Headers = new Headers();
+            foreach (var header in message.Headers)
+                kafkaMessage.Headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value));
             if (message.Key != null)
                 kafkaMessage.Key = message.Key;
             kafkaMessage.Value = message.Value;

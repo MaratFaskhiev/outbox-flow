@@ -17,6 +17,8 @@ public sealed class ProduceContext : IProduceContext
         Transaction = transaction;
         ServiceProvider = serviceProvider;
         CancellationToken = cancellationToken;
+
+        Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <inheritdoc />
@@ -30,6 +32,9 @@ public sealed class ProduceContext : IProduceContext
 
     /// <inheritdoc />
     public CancellationToken CancellationToken { get; }
+
+    /// <inheritdoc />
+    public IDictionary<string, string> Headers { get; }
 
 #pragma warning disable CA1819
     /// <inheritdoc />

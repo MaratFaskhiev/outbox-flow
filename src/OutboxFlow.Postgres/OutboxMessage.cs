@@ -10,12 +10,14 @@ public sealed class OutboxMessage : IOutboxMessage
     /// </summary>
     /// <param name="id">ID.</param>
     /// <param name="destination">Destination.</param>
+    /// <param name="headers">Headers.</param>
     /// <param name="key">Message key.</param>
     /// <param name="value">Message value.</param>
-    public OutboxMessage(long id, string? destination, byte[]? key, byte[] value)
+    public OutboxMessage(long id, string? destination, IDictionary<string, string> headers, byte[]? key, byte[] value)
     {
         Id = id;
         Destination = destination;
+        Headers = headers;
         Key = key;
         Value = value;
     }
@@ -27,6 +29,9 @@ public sealed class OutboxMessage : IOutboxMessage
 
     /// <inheritdoc />
     public string? Destination { get; }
+
+    /// <inheritdoc />
+    public IDictionary<string, string> Headers { get; set; }
 
 #pragma warning disable CA1819
     /// <inheritdoc />

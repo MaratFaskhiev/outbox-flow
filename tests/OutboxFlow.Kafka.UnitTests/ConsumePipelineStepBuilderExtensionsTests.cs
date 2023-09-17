@@ -1,4 +1,5 @@
-﻿using Confluent.Kafka;
+﻿using System.Text;
+using Confluent.Kafka;
 using Moq;
 using OutboxFlow.Consume;
 using OutboxFlow.Consume.Configuration;
@@ -11,8 +12,8 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
 {
     private readonly Mock<IConsumePipelineStepBuilder<string, IOutboxMessage>> _builder;
     private readonly Mock<IConsumeContext> _context;
-    private readonly Mock<IKafkaProducerRegistry> _kafkaProducerRegistry;
     private readonly Mock<IKafkaProducerBuilder> _kafkaProducerBuilder;
+    private readonly Mock<IKafkaProducerRegistry> _kafkaProducerRegistry;
     private readonly Mock<IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage>> _nextBuilder;
     private readonly Mock<IOutboxMessage> _outboxMessage;
     private readonly Mock<IProducer<byte[], byte[]>> _producer;
@@ -76,6 +77,12 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
         var destination = "destination";
         _outboxMessage.Setup(x => x.Destination).Returns(destination);
 
+        var headers = new Dictionary<string, string>
+        {
+            {"test_header", "test_header value"}
+        };
+        _outboxMessage.Setup(x => x.Headers).Returns(headers);
+
         var cancellationToken = new CancellationToken();
         _context.Setup(x => x.CancellationToken).Returns(cancellationToken);
 
@@ -88,7 +95,11 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
         _producer.Verify(
             x => x.ProduceAsync(
                 destination,
-                It.Is<Message<byte[], byte[]>>(m => m.Key == key && m.Value == value),
+                It.Is<Message<byte[], byte[]>>(
+                    m => m.Key == key
+                         && m.Value == value
+                         && m.Headers.Count == headers.Count
+                         && m.Headers.All(h => headers[h.Key] == Encoding.UTF8.GetString(h.GetValueBytes()))),
                 cancellationToken),
             Times.Once);
     }
@@ -122,11 +133,23 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
         var destination = "destination";
         _outboxMessage.Setup(x => x.Destination).Returns(destination);
 
+        var headers = new Dictionary<string, string>
+        {
+            {"test_header", "test_header value"}
+        };
+        _outboxMessage.Setup(x => x.Headers).Returns(headers);
+
         var cancellationToken = new CancellationToken();
         _context.Setup(x => x.CancellationToken).Returns(cancellationToken);
 
         _producer.Setup(x => x.ProduceAsync(destination,
-                It.Is<Message<byte[], byte[]>>(m => m.Key == key && m.Value == value), cancellationToken))
+                It.Is<Message<byte[], byte[]>>(
+                    m => m.Key == key
+                        && m.Value == value
+                        && m.Headers.Count == headers.Count
+                        && m.Headers.All(h =>
+                            headers[h.Key] == Encoding.UTF8.GetString(h.GetValueBytes()))),
+                cancellationToken))
             .ThrowsAsync(new ProduceException<byte[], byte[]>(
                 new Error(ErrorCode.Unknown, "error", true),
                 new DeliveryReport<byte[], byte[]>()));
