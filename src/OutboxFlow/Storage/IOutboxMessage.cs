@@ -10,6 +10,11 @@ public interface IOutboxMessage
     /// </summary>
     public string? Destination { get; }
 
+    /// <summary>
+    /// Gets the message headers.
+    /// </summary>
+    public IDictionary<string, string> Headers { get; set; }
+
 #pragma warning disable CA1819
     /// <summary>
     /// Gets the message key.

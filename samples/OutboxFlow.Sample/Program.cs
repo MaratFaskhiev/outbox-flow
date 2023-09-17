@@ -38,7 +38,7 @@ public static class Program
         await host.RunAsync(cts.Token);
     }
 
-    private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
+    private static void ConfigureServices(HostBuilderContext hostBuilderContext, IServiceCollection services)
     {
         services.AddLogging(cfg => cfg.AddConsole());
 
@@ -69,6 +69,12 @@ public static class Program
                                 })
                                 // Serialize the prototype model to a byte array
                                 .SerializeWithProtobuf()
+                                // Add some header
+                                .AddSyncStep((message, context) =>
+                                {
+                                    context.Headers.Add("timestamp", DateTime.UtcNow.ToString("O"));
+                                    return message;
+                                })
                                 // Set the message destination
                                 .SetDestination("topic")
                                 // Save the message to a storage
@@ -79,7 +85,7 @@ public static class Program
                     .AddConsumer(consumer =>
                         consumer
                             // Use PostgreSQL as an underlying storage
-                            .UsePostgres(context.Configuration.GetConnectionString("Postgres")!)
+                            .UsePostgres(hostBuilderContext.Configuration.GetConnectionString("Postgres")!)
                             // Configure the default pipeline for outbox messages.
                             // Default route will be used for all destinations which are not configured explicitly
                             .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))

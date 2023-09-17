@@ -7,9 +7,8 @@ namespace OutboxFlow.Kafka.UnitTests;
 
 public sealed class DefaultKafkaProducerBuilderTests : IDisposable
 {
-    private readonly Mock<IKafkaProducerRegistry> _registry = new(MockBehavior.Strict);
-
     private readonly DefaultKafkaProducerBuilder _builder;
+    private readonly Mock<IKafkaProducerRegistry> _registry = new(MockBehavior.Strict);
 
     public DefaultKafkaProducerBuilderTests()
     {

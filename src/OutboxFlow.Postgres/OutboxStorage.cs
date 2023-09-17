@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text.Json;
 using Npgsql;
 using NpgsqlTypes;
 using OutboxFlow.Produce;
@@ -12,13 +13,13 @@ namespace OutboxFlow.Postgres;
 public sealed class OutboxStorage : IOutboxStorage
 {
     private const string FetchCommandText = @"
-select id, destination, key, value from outbox_message
+select id, destination, headers, key, value from outbox_message
 order by id
 limit @batch_size;";
 
     private const string InsertCommandText = @"
-insert into outbox_message (destination, key, value, created_at)
-values (@destination, @key, @value, @created_at);";
+insert into outbox_message (destination, headers, key, value, created_at)
+values (@destination, @headers::jsonb, @key, @value, @created_at);";
 
     private const string DeleteCommandText = @"
 delete from outbox_message
@@ -53,16 +54,24 @@ where id = any(@ids);";
                 destination = await reader.GetFieldValueAsync<string>(1, cancellationToken)
                     .ConfigureAwait(false);
 
-            byte[]? key = null;
+            string? headers = null;
             if (!await reader.IsDBNullAsync(2, cancellationToken).ConfigureAwait(false))
-                key = await reader.GetFieldValueAsync<byte[]>(2, cancellationToken)
+                headers = await reader.GetFieldValueAsync<string>(2, cancellationToken)
                     .ConfigureAwait(false);
+
+            byte[]? key = null;
+            if (!await reader.IsDBNullAsync(3, cancellationToken).ConfigureAwait(false))
+                key = await reader.GetFieldValueAsync<byte[]>(3, cancellationToken)
+                    .ConfigureAwait(false);
+
+            var value = await reader.GetFieldValueAsync<byte[]>(4, cancellationToken).ConfigureAwait(false);
 
             var message = new OutboxMessage(
                 id,
                 destination,
+                DeserializeHeaders(headers),
                 key,
-                await reader.GetFieldValueAsync<byte[]>(3, cancellationToken).ConfigureAwait(false));
+                value);
 
             result.Add(message);
         }
@@ -84,6 +93,7 @@ where id = any(@ids);";
         command.CommandText = InsertCommandText;
 
         command.Parameters.AddWithValue("destination", (object?) context.Destination ?? DBNull.Value);
+        command.Parameters.AddWithValue("headers", (object?) SerializeHeaders(context.Headers) ?? DBNull.Value);
         command.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) context.Key ?? DBNull.Value);
         command.Parameters.AddWithValue("value", context.Value);
         command.Parameters.AddWithValue("created_at", DateTime.UtcNow);
@@ -114,5 +124,20 @@ where id = any(@ids);";
         if (connection == null)
             throw new InvalidOperationException("Connection must be defined.");
         return connection;
+    }
+
+    private string? SerializeHeaders(IDictionary<string, string>? headers)
+    {
+        if (headers == null || !headers.Any()) return null;
+
+        return JsonSerializer.Serialize(headers);
+    }
+
+    private IDictionary<string, string> DeserializeHeaders(string? headers)
+    {
+        if (headers == null) return new Dictionary<string, string>();
+
+        return JsonSerializer.Deserialize<Dictionary<string, string>>(headers)
+               ?? new Dictionary<string, string>();
     }
 }

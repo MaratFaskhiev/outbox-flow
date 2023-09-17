@@ -27,6 +27,11 @@ public interface IProduceContext
     /// </summary>
     public CancellationToken CancellationToken { get; }
 
+    /// <summary>
+    /// Gets the message headers.
+    /// </summary>
+    public IDictionary<string, string> Headers { get; }
+
 #pragma warning disable CA1819
     /// <summary>
     /// Gets or sets the message key.

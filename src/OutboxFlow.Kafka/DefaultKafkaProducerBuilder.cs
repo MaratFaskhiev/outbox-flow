@@ -6,8 +6,8 @@ namespace OutboxFlow.Kafka;
 /// <inheritdoc />
 public sealed class DefaultKafkaProducerBuilder : IKafkaProducerBuilder
 {
-    private readonly IKafkaProducerRegistry _registry;
     private readonly ILogger<DefaultKafkaProducerBuilder> _logger;
+    private readonly IKafkaProducerRegistry _registry;
 
     /// <summary>
     /// Ctor.
@@ -41,10 +41,12 @@ public sealed class DefaultKafkaProducerBuilder : IKafkaProducerBuilder
             _registry.Remove(producerConfig);
         }
         else
+        {
             _logger.LogWarning(
                 "Kafka producer {name} error: {code} ({reason})",
                 producer.Name,
                 error.Code,
                 error.Reason);
+        }
     }
 }
