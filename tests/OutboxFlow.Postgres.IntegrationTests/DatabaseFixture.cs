@@ -5,7 +5,7 @@ namespace OutboxFlow.Postgres.IntegrationTests;
 
 public sealed class DatabaseFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgreSqlContainer = new PostgreSqlBuilder()
+    private readonly PostgreSqlContainer _postgreSqlContainer = new PostgreSqlBuilder("postgres:15")
         .WithResourceMapping("postgres.sql", "/docker-entrypoint-initdb.d")
         .Build();
 

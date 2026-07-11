@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
 
@@ -12,7 +12,7 @@
         <!-- CA1848: Use the LoggerMessage delegates -->
         <!-- CA1707: Identifiers should not contain underscores -->
         <!-- CA2007: Do not directly await a Task -->
-        <NoWarn>CA1062;CA1848;CA1707;CA2007</NoWarn>
+        <NoWarn>CA1062;CA1848;CA1707;CA2007;CA1515</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

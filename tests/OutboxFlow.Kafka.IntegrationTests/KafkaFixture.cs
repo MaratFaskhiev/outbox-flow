@@ -5,7 +5,8 @@ namespace OutboxFlow.Kafka.IntegrationTests;
 
 public sealed class KafkaFixture : IAsyncLifetime
 {
-    private readonly KafkaContainer _kafkaContainer = new KafkaBuilder().Build();
+    private readonly KafkaContainer _kafkaContainer = new KafkaBuilder("confluentinc/cp-kafka:7.5.0")
+        .Build();
 
     public string BootstrapAddress => _kafkaContainer.GetBootstrapAddress();
 
