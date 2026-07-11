@@ -1,19 +1,85 @@
 # OutboxFlow [![build and test](https://github.com/MaratFaskhiev/outbox-flow/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/MaratFaskhiev/outbox-flow/actions/workflows/build-and-test.yml)
 
 ## Introduction
+
 Simple implementation of the transactional outbox based on the pipeline pattern.
 
 **Disclaimer**
 
 This project is a pet project which I'm going to support in a free time. It can be used as an example of how outbox pattern can be implemented in an extensible way.
 
+## Documentation
+
+| Document | Description | Audience |
+|---|---|---|
+| [Architecture](docs/architecture.md) | Pipeline pattern, contexts, message lifecycle | All |
+| [Getting Started](docs/getting-started.md) | Step-by-step setup and first run | New users |
+| [Configuration](docs/configuration.md) | Full fluent API reference | Developers |
+| [Middleware](docs/middleware.md) | Custom middleware development guide | Developers |
+| [Storage](docs/storage.md) | Storage provider implementation guide | Contributors |
+| [Kafka](docs/kafka.md) | Kafka destination configuration | Developers |
+| [Serialization](docs/serialization.md) | Serializer guide (JSON, Protobuf, custom) | Developers |
+
+## Quick Start
+
+Install the required NuGet packages:
+
+```shell
+dotnet add package OutboxFlow
+dotnet add package OutboxFlow.Postgres
+dotnet add package OutboxFlow.Kafka
+```
+
+Configure the outbox in your `Program.cs`:
+
+```csharp
+services
+    .AddKafka()
+    .AddOutbox(outboxBuilder =>
+        outboxBuilder
+            .AddProducer(producer => producer
+                .UsePostgres()
+                .ForMessage<MyMessage>(pipeline =>
+                    pipeline
+                        .SerializeWithJson()
+                        .SetDestination("my-topic")
+                        .Save()
+                )
+            )
+            .AddConsumer(consumer =>
+                consumer
+                    .UsePostgres(connectionString)
+                    .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
+            )
+    );
+```
+
+Produce a message within a database transaction:
+
+```csharp
+await _producer.ProduceAsync(new MyMessage("Hello!"), transaction, cancellationToken);
+```
+
+The consumer background service reads messages from the outbox storage and sends them to Kafka automatically.
+
+## Packages
+
+| Package | Description |
+|---|---|
+| [OutboxFlow](https://www.nuget.org/packages/OutboxFlow/) | Core library: pipeline, produce, consume, storage abstractions |
+| [OutboxFlow.Postgres](https://www.nuget.org/packages/OutboxFlow.Postgres/) | PostgreSQL outbox storage implementation |
+| [OutboxFlow.Kafka](https://www.nuget.org/packages/OutboxFlow.Kafka/) | Kafka outbox destination implementation |
+
 ## Overview
+
 OutboxFlow provides two base abstractions: producers and consumers.
 
 ### Producers
+
 The purpose of producers is to save messages to an outbox storage.
 
 Let's check the sample producer configuration:
+
 ```csharp
 services
     // Register the outbox dependencies
@@ -70,9 +136,11 @@ private async Task ProduceSampleMessageAsync(CancellationToken cancellationToken
 ```
 
 ### Consumers
+
 The purpose of consumers is to read messages from outbox storage and send them to the destination.
 
 Let's check the sample consumer configuration:
+
 ```csharp
 
 var producerConfig = new ProducerConfig
@@ -137,9 +205,8 @@ We are creating two tables:
 
 You can check the complete sample application [here](samples/OutboxFlow.Sample).
 
-### To Be Done :)
+### To Be Done
 
-* Documentation
 * Entity Framework support
 * OpenTelemetry support
 * and more...
