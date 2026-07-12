@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using FluentAssertions;
+using Moq;
 using OutboxFlow.Produce;
 using OutboxFlow.Produce.Configuration;
 using OutboxFlow.Storage;
@@ -69,7 +70,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = await pipelineStepAction!.Invoke(input, _produceContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -99,7 +100,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = await pipelineStepAction!.Invoke(input, _produceContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -129,7 +130,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = await pipelineStepAction!.Invoke(input, _produceContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -159,7 +160,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = pipelineStepAction!.Invoke(input, _produceContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -189,7 +190,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = pipelineStepAction!.Invoke(input, _produceContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -219,7 +220,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = pipelineStepAction!.Invoke(input, _produceContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -242,7 +243,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = pipelineStepAction!.Invoke(input, _produceContext.Object);
 
-        Assert.Equal(input, result);
+        result.Should().Be(input);
     }
 
     [Fact]
@@ -265,7 +266,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = pipelineStepAction!.Invoke(input, _produceContext.Object);
 
-        Assert.Equal(input, result);
+        result.Should().Be(input);
     }
 
     [Fact]

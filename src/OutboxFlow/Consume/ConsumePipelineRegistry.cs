@@ -22,19 +22,21 @@ public sealed class ConsumePipelineRegistry : IConsumePipelineRegistry
     }
 
     /// <inheritdoc />
-    public IPipelineStep<IConsumeContext, IOutboxMessage> GetPipeline(string? destination = null)
+    public IPipelineStep<IConsumeContext, IOutboxMessage> GetPipeline(string destination)
     {
-        if (destination == null)
-        {
-            if (_defaultPipeline == null)
-                throw new InvalidOperationException("Default pipeline is not registered.");
-
-            return _defaultPipeline;
-        }
+        ArgumentNullException.ThrowIfNull(destination);
 
         if (!_pipelines.TryGetValue(destination, out var pipeline) && _defaultPipeline == null)
             throw new InvalidOperationException($"Pipeline for the destination \"{destination}\" is not registered.");
 
-        return (pipeline ?? _defaultPipeline)!;
+        return pipeline ?? _defaultPipeline!;
+    }
+
+    public IPipelineStep<IConsumeContext, IOutboxMessage> GetPipeline()
+    {
+        if (_defaultPipeline == null)
+            throw new InvalidOperationException("Default pipeline is not registered.");
+
+        return _defaultPipeline;
     }
 }

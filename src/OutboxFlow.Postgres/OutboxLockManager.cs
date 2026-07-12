@@ -13,17 +13,17 @@ public sealed class OutboxLockManager : IOutboxLockManager
 lock table outbox_state in access exclusive mode nowait;
 
 select count(id) from outbox_state
-where expire_at > now();
+where expire_at > clock_timestamp();
 ";
 
     private const string InsertCommandText = @"
-insert into outbox_state (expire_at) values (now() + @timeout)
+insert into outbox_state (expire_at) values (clock_timestamp() + @timeout)
 returning id, expire_at;
 ";
 
     private const string ReleaseCommandText = @"
 delete from outbox_state
-where expire_at < now() or id = @id;
+where expire_at < clock_timestamp() or id = @id;
 ";
 
     private const string LockNotAvailableCode = "55P03";

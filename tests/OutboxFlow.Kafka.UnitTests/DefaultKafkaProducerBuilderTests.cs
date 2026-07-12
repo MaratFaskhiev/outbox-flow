@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
@@ -25,7 +26,7 @@ public sealed class DefaultKafkaProducerBuilderTests : IDisposable
     {
         var producer = _builder.Create(new ProducerConfig());
 
-        Assert.NotNull(producer);
+        producer.Should().NotBeNull();
     }
 
     [Fact]

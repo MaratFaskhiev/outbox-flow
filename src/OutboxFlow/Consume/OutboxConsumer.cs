@@ -79,7 +79,9 @@ public sealed class OutboxConsumer : IOutboxConsumer
                 _serviceProvider,
                 combinedTokenSource.Token);
 
-            var consumePipeline = _registry.GetPipeline(message.Destination);
+            var consumePipeline = message.Destination != null
+                ? _registry.GetPipeline(message.Destination)
+                : _registry.GetPipeline();
             await consumePipeline.RunAsync(message, context).ConfigureAwait(false);
         }
 

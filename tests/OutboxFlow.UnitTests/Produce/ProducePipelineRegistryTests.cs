@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using FluentAssertions;
+using Moq;
 using OutboxFlow.Produce;
 using Xunit;
 
@@ -27,7 +28,7 @@ public sealed class ProducePipelineRegistryTests : IDisposable
     [Fact]
     public void GetPipeline_TypeIsNotRegistered_ThrowsInvalidOperationException()
     {
-        Assert.Throws<InvalidOperationException>(() => _registry.GetPipeline<int>());
+        FluentActions.Invoking(() => _registry.GetPipeline<int>()).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -35,6 +36,6 @@ public sealed class ProducePipelineRegistryTests : IDisposable
     {
         var result = _registry.GetPipeline<string>();
 
-        Assert.Same(_pipeline.Object, result);
+        result.Should().BeSameAs(_pipeline.Object);
     }
 }

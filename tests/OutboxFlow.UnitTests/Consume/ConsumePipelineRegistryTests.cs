@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using FluentAssertions;
+using Moq;
 using OutboxFlow.Consume;
 using OutboxFlow.Storage;
 using Xunit;
@@ -7,53 +8,37 @@ namespace OutboxFlow.UnitTests.Consume;
 
 public sealed class ConsumePipelineRegistryTests
 {
-    [Fact]
-    public void GetPipeline_DestinationIsNull_DefaultPipelineIsNull_ThrowsInvalidOperationException()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("test")]
+    public void GetPipeline_DefaultPipelineIsNull_ThrowsInvalidOperationException(string? destination)
     {
         var registry = new ConsumePipelineRegistry(
             new Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>>(),
             null);
 
-        Assert.Throws<InvalidOperationException>(() => registry.GetPipeline());
+        var action = destination is null
+            ? (Action) (() => registry.GetPipeline())
+            : () => registry.GetPipeline(destination);
+
+        action.Should().Throw<InvalidOperationException>();
     }
 
-    [Fact]
-    public void GetPipeline_DestinationIsNull_ReturnsDefaultPipeline()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("test")]
+    public void GetPipeline_DefaultPipelineIsSet_ReturnsDefaultPipeline(string? destination)
     {
         var defaultPipeline = Mock.Of<IPipelineStep<IConsumeContext, IOutboxMessage>>();
         var registry = new ConsumePipelineRegistry(
             new Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>>(),
             defaultPipeline);
 
-        var result = registry.GetPipeline();
+        var result = destination is null
+            ? registry.GetPipeline()
+            : registry.GetPipeline(destination);
 
-        Assert.Same(defaultPipeline, result);
-    }
-
-    [Fact]
-    public void GetPipeline_DestinationIsNotFound_DefaultPipelineIsNull_ThrowsInvalidOperationException()
-    {
-        const string destination = "test";
-        var registry = new ConsumePipelineRegistry(
-            new Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>>(),
-            null);
-
-        Assert.Throws<InvalidOperationException>(() => registry.GetPipeline(destination));
-    }
-
-    [Fact]
-    public void GetPipeline_DestinationIsNotFound_ReturnsDefaultPipeline()
-    {
-        const string destination = "test";
-
-        var defaultPipeline = Mock.Of<IPipelineStep<IConsumeContext, IOutboxMessage>>();
-        var registry = new ConsumePipelineRegistry(
-            new Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>>(),
-            defaultPipeline);
-
-        var result = registry.GetPipeline(destination);
-
-        Assert.Same(defaultPipeline, result);
+        result.Should().BeSameAs(defaultPipeline);
     }
 
     [Fact]
@@ -76,6 +61,16 @@ public sealed class ConsumePipelineRegistryTests
 
         var result = registry.GetPipeline(destination1);
 
-        Assert.Same(pipeline1, result);
+        result.Should().BeSameAs(pipeline1);
+    }
+
+    [Fact]
+    public void GetPipeline_DestinationIsExplicitNull_ThrowsArgumentNullException()
+    {
+        var registry = new ConsumePipelineRegistry(
+            new Dictionary<string, IPipelineStep<IConsumeContext, IOutboxMessage>>(),
+            Mock.Of<IPipelineStep<IConsumeContext, IOutboxMessage>>());
+
+        FluentActions.Invoking(() => registry.GetPipeline(null!)).Should().Throw<ArgumentNullException>();
     }
 }

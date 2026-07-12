@@ -1,4 +1,5 @@
-﻿using Moq;
+using FluentAssertions;
+using Moq;
 using OutboxFlow.Consume;
 using OutboxFlow.Consume.Configuration;
 using Xunit;
@@ -65,7 +66,7 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = await pipelineStepAction!.Invoke(input, _consumeContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -92,7 +93,7 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = pipelineStepAction!.Invoke(input, _consumeContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -119,7 +120,7 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = await pipelineStepAction!.Invoke(input, _consumeContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 
     [Fact]
@@ -146,6 +147,6 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
 
         var result = pipelineStepAction!.Invoke(input, _consumeContext.Object);
 
-        Assert.Equal(output, result);
+        result.Should().Be(output);
     }
 }

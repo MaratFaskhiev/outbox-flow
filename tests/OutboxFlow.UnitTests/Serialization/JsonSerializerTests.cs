@@ -1,4 +1,5 @@
-﻿using OutboxFlow.Serialization;
+﻿using FluentAssertions;
+using OutboxFlow.Serialization;
 using Xunit;
 
 namespace OutboxFlow.UnitTests.Serialization;
@@ -18,8 +19,14 @@ public sealed class JsonSerializerTests
         var serializedResult = _serializer.Serialize(original);
         var result = System.Text.Json.JsonSerializer.Deserialize<TestA>(serializedResult);
 
-        Assert.NotNull(result);
-        Assert.Equal(original.Value, result.Value);
+        result.Should().NotBeNull();
+        result!.Value.Should().Be(original.Value);
+    }
+
+    [Fact]
+    public void Serialize_NullValue_ThrowsArgumentNullException()
+    {
+        FluentActions.Invoking(() => _serializer.Serialize<object?>(null)).Should().Throw<ArgumentNullException>();
     }
 
     private sealed class TestA

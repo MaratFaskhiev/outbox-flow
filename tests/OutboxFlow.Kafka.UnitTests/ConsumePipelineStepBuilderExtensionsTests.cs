@@ -1,5 +1,6 @@
-﻿using System.Text;
+using System.Text;
 using Confluent.Kafka;
+using FluentAssertions;
 using Moq;
 using OutboxFlow.Consume;
 using OutboxFlow.Consume.Configuration;
@@ -63,7 +64,7 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
 
         _builder.Object.SendToKafka<string, IKafkaProducerBuilder>(producerConfig);
 
-        Assert.NotNull(action);
+        action.Should().NotBeNull();
 
         _kafkaProducerRegistry.Setup(x => x.GetOrCreate(_kafkaProducerBuilder.Object, producerConfig))
             .Returns(_producer.Object);
@@ -83,23 +84,23 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
         };
         _outboxMessage.Setup(x => x.Headers).Returns(headers);
 
-        var cancellationToken = new CancellationToken();
+        var cancellationToken = CancellationToken.None;
         _context.Setup(x => x.CancellationToken).Returns(cancellationToken);
 
         _producer.Setup(x => x.ProduceAsync(destination,
                 It.Is<Message<byte[], byte[]>>(m => m.Key == key && m.Value == value), cancellationToken))
             .ReturnsAsync(new DeliveryReport<byte[], byte[]>());
 
-        await action(_outboxMessage.Object, _context.Object);
+        await action!(_outboxMessage.Object, _context.Object);
 
         _producer.Verify(
             x => x.ProduceAsync(
                 destination,
-                It.Is<Message<byte[], byte[]>>(
-                    m => m.Key == key
-                         && m.Value == value
-                         && m.Headers.Count == headers.Count
-                         && m.Headers.All(h => headers[h.Key] == Encoding.UTF8.GetString(h.GetValueBytes()))),
+                It.Is<Message<byte[], byte[]>>(m => m.Key == key
+                                                    && m.Value == value
+                                                    && m.Headers.Count == headers.Count
+                                                    && m.Headers.All(h =>
+                                                        headers[h.Key] == Encoding.UTF8.GetString(h.GetValueBytes()))),
                 cancellationToken),
             Times.Once);
     }
@@ -117,7 +118,7 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
 
         _builder.Object.SendToKafka<string, IKafkaProducerBuilder>(producerConfig);
 
-        Assert.NotNull(action);
+        action.Should().NotBeNull();
 
         _kafkaProducerRegistry.Setup(x => x.GetOrCreate(_kafkaProducerBuilder.Object, producerConfig))
             .Returns(_producer.Object);
@@ -139,16 +140,15 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
         };
         _outboxMessage.Setup(x => x.Headers).Returns(headers);
 
-        var cancellationToken = new CancellationToken();
+        var cancellationToken = CancellationToken.None;
         _context.Setup(x => x.CancellationToken).Returns(cancellationToken);
 
         _producer.Setup(x => x.ProduceAsync(destination,
-                It.Is<Message<byte[], byte[]>>(
-                    m => m.Key == key
-                        && m.Value == value
-                        && m.Headers.Count == headers.Count
-                        && m.Headers.All(h =>
-                            headers[h.Key] == Encoding.UTF8.GetString(h.GetValueBytes()))),
+                It.Is<Message<byte[], byte[]>>(m => m.Key == key
+                                                    && m.Value == value
+                                                    && m.Headers.Count == headers.Count
+                                                    && m.Headers.All(h =>
+                                                        headers[h.Key] == Encoding.UTF8.GetString(h.GetValueBytes()))),
                 cancellationToken))
             .ThrowsAsync(new ProduceException<byte[], byte[]>(
                 new Error(ErrorCode.Unknown, "error", true),
@@ -156,7 +156,7 @@ public sealed class ConsumePipelineStepBuilderExtensionsTests : IDisposable
 
         _producer.Setup(x => x.Dispose());
 
-        await Assert.ThrowsAsync<ProduceException<byte[], byte[]>>(
-            async () => await action(_outboxMessage.Object, _context.Object));
+        await Assert.ThrowsAsync<ProduceException<byte[], byte[]>>(async () =>
+            await action!(_outboxMessage.Object, _context.Object));
     }
 }
