@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace OutboxFlow.UnitTests;
 
@@ -9,6 +10,6 @@ public sealed class ClockTests
     [Fact]
     public void UtcNow_ReturnsUtcDateTime()
     {
-        Assert.Equal(DateTimeKind.Utc, _clock.UtcNow.Kind);
+        _clock.UtcNow.Kind.Should().Be(DateTimeKind.Utc);
     }
 }

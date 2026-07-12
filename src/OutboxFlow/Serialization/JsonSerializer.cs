@@ -12,6 +12,8 @@ public sealed class JsonSerializer : ISerializer<byte[]>
     /// <typeparam name="TValue">Value type.</typeparam>
     public byte[] Serialize<TValue>(TValue value)
     {
+        ArgumentNullException.ThrowIfNull(value);
+
         return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value);
     }
 }

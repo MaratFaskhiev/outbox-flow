@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using FluentAssertions;
 using Moq;
 using OutboxFlow.Produce;
 using Xunit;
@@ -41,11 +42,11 @@ public sealed class ProducerTests : IDisposable
             .Callback((string _, IProduceContext ctx) => { context = ctx; })
             .Returns(new ValueTask());
 
-        await _producer.ProduceAsync(message, _transaction.Object, new CancellationToken());
+        await _producer.ProduceAsync(message, _transaction.Object, CancellationToken.None);
 
-        Assert.NotNull(context);
-        Assert.Same(_transaction.Object, context.Transaction);
-        Assert.Same(_serviceProvider.Object, context.ServiceProvider);
-        Assert.False(context.CancellationToken.IsCancellationRequested);
+        context.Should().NotBeNull();
+        context!.Transaction.Should().BeSameAs(_transaction.Object);
+        context.ServiceProvider.Should().BeSameAs(_serviceProvider.Object);
+        context.CancellationToken.IsCancellationRequested.Should().BeFalse();
     }
 }

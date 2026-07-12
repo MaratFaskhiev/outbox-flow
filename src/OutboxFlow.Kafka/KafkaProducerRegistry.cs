@@ -13,7 +13,17 @@ public sealed class KafkaProducerRegistry : IKafkaProducerRegistry, IDisposable
     {
         foreach (var producer in _producers.Values.Where(x => x.IsValueCreated))
         {
-            producer.Value.Flush();
+            using (var flushCts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+            {
+                try
+                {
+                    producer.Value.Flush(flushCts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
+
             producer.Value.Dispose();
         }
 

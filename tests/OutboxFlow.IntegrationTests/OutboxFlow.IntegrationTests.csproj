@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <ItemGroup>
+        <PackageReference Include="Npgsql" />
+        <PackageReference Include="Testcontainers.PostgreSql" />
+        <PackageReference Include="Testcontainers.Kafka" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\OutboxFlow.Postgres\OutboxFlow.Postgres.csproj" />
+        <ProjectReference Include="..\..\src\OutboxFlow.Kafka\OutboxFlow.Kafka.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="..\..\scripts\postgres.sql">
+            <Link>postgres.sql</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+</Project>

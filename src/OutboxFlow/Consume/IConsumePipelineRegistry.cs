@@ -8,8 +8,15 @@ namespace OutboxFlow.Consume;
 public interface IConsumePipelineRegistry
 {
     /// <summary>
-    /// Gets the pipeline by the destination.
+    /// Gets a consume pipeline for the specified destination.
     /// </summary>
-    /// <param name="destination">Destination.</param>
-    IPipelineStep<IConsumeContext, IOutboxMessage> GetPipeline(string? destination = null);
+    /// <param name="destination">Message destination.</param>
+    /// <returns>Consume pipeline.</returns>
+    IPipelineStep<IConsumeContext, IOutboxMessage> GetPipeline(string destination);
+
+    /// <summary>
+    /// Gets the default consume pipeline.
+    /// </summary>
+    /// <returns>Default consume pipeline.</returns>
+    IPipelineStep<IConsumeContext, IOutboxMessage> GetPipeline();
 }

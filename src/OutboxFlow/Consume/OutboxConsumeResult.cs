@@ -10,7 +10,7 @@ public sealed record OutboxConsumeResult
     /// </summary>
     /// <param name="IsSuccessful"><c>true</c> if messages were successfully consumed, otherwise <c>false</c>.</param>
     /// <param name="Count">The amount of consumed messages, if messages were successfully consumed.</param>
-    public OutboxConsumeResult(bool IsSuccessful, int Count = default)
+    public OutboxConsumeResult(bool IsSuccessful, int Count = 0)
     {
         this.IsSuccessful = IsSuccessful;
         this.Count = Count;

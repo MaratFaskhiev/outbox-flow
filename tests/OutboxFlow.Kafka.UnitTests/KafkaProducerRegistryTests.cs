@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using FluentAssertions;
 using Moq;
 using Xunit;
 
@@ -26,7 +27,7 @@ public sealed class KafkaProducerRegistryTests : IDisposable
         var producer1 = _registry.GetOrCreate(_builder.Object, producerConfig);
         var producer2 = _registry.GetOrCreate(_builder.Object, producerConfig);
 
-        Assert.Same(producer1, producer2);
+        producer1.Should().BeSameAs(producer2);
 
         _builder.Verify(x => x.Create(producerConfig), Times.Once);
     }
@@ -37,7 +38,7 @@ public sealed class KafkaProducerRegistryTests : IDisposable
         var producerConfig = new ProducerConfig();
 
         var producer = new Mock<IProducer<byte[], byte[]>>(MockBehavior.Strict);
-        producer.Setup(x => x.Flush(CancellationToken.None));
+        producer.Setup(x => x.Flush(It.IsAny<CancellationToken>()));
         producer.Setup(x => x.Dispose());
         _builder.Setup(x => x.Create(producerConfig)).Returns(producer.Object);
 
@@ -53,14 +54,17 @@ public sealed class KafkaProducerRegistryTests : IDisposable
         var producerConfig = new ProducerConfig();
 
         var producer = new Mock<IProducer<byte[], byte[]>>();
-        _builder.Setup(x => x.Create(producerConfig)).Returns(producer.Object);
+        var newProducerMock = new Mock<IProducer<byte[], byte[]>>();
+        _builder.SetupSequence(x => x.Create(producerConfig))
+            .Returns(producer.Object)
+            .Returns(newProducerMock.Object);
 
         _registry.GetOrCreate(_builder.Object, producerConfig);
         _registry.Remove(producerConfig);
 
         var newProducer = _registry.GetOrCreate(_builder.Object, producerConfig);
 
-        Assert.NotSame(producer, newProducer);
+        newProducer.Should().NotBeSameAs(producer.Object);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -35,7 +36,7 @@ public sealed class ConsumerBuilderTests : IDisposable
     {
         _builder.SetDefaultRoute(_ => { });
 
-        Assert.Throws<InvalidOperationException>(() => _builder.SetDefaultRoute(_ => { }));
+        FluentActions.Invoking(() => _builder.SetDefaultRoute(_ => { })).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -44,13 +45,14 @@ public sealed class ConsumerBuilderTests : IDisposable
         const string destination = "test";
         _builder.AddRoute(destination, _ => { });
 
-        Assert.Throws<InvalidOperationException>(() => _builder.AddRoute(destination, _ => { }));
+        FluentActions.Invoking(() => _builder.AddRoute(destination, _ => { })).Should()
+            .Throw<InvalidOperationException>();
     }
 
     [Fact]
     public void Build_OutboxStorageRegistrarIsNotSet_ThrowsInvalidOperationException()
     {
-        Assert.Throws<InvalidOperationException>(() => _builder.Build(_services.Object));
+        FluentActions.Invoking(() => _builder.Build(_services.Object)).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -94,15 +96,15 @@ public sealed class ConsumerBuilderTests : IDisposable
 
         _builder.Build(_services.Object);
 
-        Assert.NotNull(configureOptions);
+        configureOptions.Should().NotBeNull();
 
         var options = new OutboxStorageConsumerOptions();
         configureOptions!.Action!.Invoke(options);
 
-        Assert.Equal(_builder.IsolationLevel, options.IsolationLevel);
-        Assert.Equal(_builder.BatchSize, options.BatchSize);
-        Assert.Equal(_builder.ConsumeDelay, options.ConsumeDelay);
-        Assert.Equal(_builder.Timeout, options.Timeout);
+        options.IsolationLevel.Should().Be(_builder.IsolationLevel);
+        options.BatchSize.Should().Be(_builder.BatchSize);
+        options.ConsumeDelay.Should().Be(_builder.ConsumeDelay);
+        options.Timeout.Should().Be(_builder.Timeout);
     }
 
     [Fact]
@@ -136,15 +138,15 @@ public sealed class ConsumerBuilderTests : IDisposable
 
         _builder.Build(_services.Object);
 
-        Assert.NotNull(pipelineRegistry);
+        pipelineRegistry.Should().NotBeNull();
 
         var defaultPipeline = pipelineRegistry.GetPipeline();
 
-        Assert.NotNull(defaultPipeline);
+        defaultPipeline.Should().NotBeNull();
 
         await defaultPipeline.RunAsync(Mock.Of<IOutboxMessage>(), Mock.Of<IConsumeContext>());
 
-        Assert.True(isInvoked);
+        isInvoked.Should().BeTrue();
     }
 
     [Fact]
@@ -180,15 +182,15 @@ public sealed class ConsumerBuilderTests : IDisposable
 
         _builder.Build(_services.Object);
 
-        Assert.NotNull(pipelineRegistry);
+        pipelineRegistry.Should().NotBeNull();
 
         var pipeline = pipelineRegistry.GetPipeline(destination);
 
-        Assert.NotNull(pipeline);
+        pipeline.Should().NotBeNull();
 
         await pipeline.RunAsync(Mock.Of<IOutboxMessage>(), Mock.Of<IConsumeContext>());
 
-        Assert.True(isInvoked);
+        isInvoked.Should().BeTrue();
     }
 
     [Fact]

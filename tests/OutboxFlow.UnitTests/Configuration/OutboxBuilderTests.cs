@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OutboxFlow.Configuration;
@@ -25,63 +26,81 @@ public sealed class OutboxBuilderTests : IDisposable
         Mock.VerifyAll(_services, _outboxStorageRegistrar);
     }
 
-    [Fact]
-    public void AddProducer_IsAlreadyConfigured_ThrowsInvalidOperationException()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AddComponent_IsAlreadyConfigured_ThrowsInvalidOperationException(bool isProducer)
     {
-        _builder.AddProducer(_ => { });
-
-        Assert.Throws<InvalidOperationException>(() => _builder.AddProducer(_ => { }));
+        if (isProducer)
+        {
+            _builder.AddProducer(_ => { });
+            FluentActions.Invoking(() => _builder.AddProducer(_ => { })).Should().Throw<InvalidOperationException>();
+        }
+        else
+        {
+            _builder.AddConsumer(_ => { });
+            FluentActions.Invoking(() => _builder.AddConsumer(_ => { })).Should().Throw<InvalidOperationException>();
+        }
     }
 
-    [Fact]
-    public void Build_ProducerIsConfigured_InvokesConfigurationAction()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Build_ComponentIsConfigured_InvokesConfigurationAction(bool isProducer)
     {
         _services.Setup(x => x.Count).Returns(0);
         _services.Setup(x => x.Add(It.IsAny<ServiceDescriptor>()));
         _outboxStorageRegistrar.Setup(x => x.Register(_services.Object));
 
         var isInvoked = false;
-        _builder.AddProducer(producerBuilder =>
-        {
-            producerBuilder.OutboxStorageRegistrar = _outboxStorageRegistrar.Object;
-            isInvoked = true;
-        });
+        if (isProducer)
+            _builder.AddProducer(producerBuilder =>
+            {
+                producerBuilder.OutboxStorageRegistrar = _outboxStorageRegistrar.Object;
+                isInvoked = true;
+            });
+        else
+            _builder.AddConsumer(consumerBuilder =>
+            {
+                consumerBuilder.OutboxStorageRegistrar = _outboxStorageRegistrar.Object;
+                isInvoked = true;
+            });
 
         _builder.Build(_services.Object);
 
-        Assert.True(isInvoked);
-    }
-
-    [Fact]
-    public void AddConsumer_IsAlreadyConfigured_ThrowsInvalidOperationException()
-    {
-        _builder.AddConsumer(_ => { });
-
-        Assert.Throws<InvalidOperationException>(() => _builder.AddConsumer(_ => { }));
-    }
-
-    [Fact]
-    public void Build_ConsumerIsConfigured_InvokesConfigurationAction()
-    {
-        _services.Setup(x => x.Count).Returns(0);
-        _services.Setup(x => x.Add(It.IsAny<ServiceDescriptor>()));
-        _outboxStorageRegistrar.Setup(x => x.Register(_services.Object));
-
-        var isInvoked = false;
-        _builder.AddConsumer(consumerBuilder =>
-        {
-            consumerBuilder.OutboxStorageRegistrar = _outboxStorageRegistrar.Object;
-            isInvoked = true;
-        });
-
-        _builder.Build(_services.Object);
-
-        Assert.True(isInvoked);
+        isInvoked.Should().BeTrue();
     }
 
     [Fact]
     public void Build_IsNotConfigured_DoesNothing()
     {
         _builder.Build(_services.Object);
+    }
+
+    [Fact]
+    public void Build_BothProducerAndConsumerAreConfigured_InvokesBothConfigurationActions()
+    {
+        _services.Setup(x => x.Count).Returns(0);
+        _services.Setup(x => x.Add(It.IsAny<ServiceDescriptor>()));
+        _outboxStorageRegistrar.Setup(x => x.Register(_services.Object));
+
+        var producerInvoked = false;
+        var consumerInvoked = false;
+
+        _builder.AddProducer(producerBuilder =>
+        {
+            producerBuilder.OutboxStorageRegistrar = _outboxStorageRegistrar.Object;
+            producerInvoked = true;
+        });
+        _builder.AddConsumer(consumerBuilder =>
+        {
+            consumerBuilder.OutboxStorageRegistrar = _outboxStorageRegistrar.Object;
+            consumerInvoked = true;
+        });
+
+        _builder.Build(_services.Object);
+
+        producerInvoked.Should().BeTrue();
+        consumerInvoked.Should().BeTrue();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -87,7 +88,7 @@ public sealed class OutboxConsumerTests : IDisposable
 
         var result = await _consumer.ConsumeAsync(It.IsAny<CancellationToken>());
 
-        Assert.False(result.IsSuccessful);
+        result.IsSuccessful.Should().BeFalse();
     }
 
     [Fact]
@@ -126,9 +127,9 @@ public sealed class OutboxConsumerTests : IDisposable
 
         var result = await _consumer.ConsumeAsync(CancellationToken.None);
 
-        Assert.True(result.IsSuccessful);
-        Assert.NotNull(context);
-        Assert.Same(_serviceProvider.Object, context.ServiceProvider);
-        Assert.False(context.CancellationToken.IsCancellationRequested);
+        result.IsSuccessful.Should().BeTrue();
+        context.Should().NotBeNull();
+        context!.ServiceProvider.Should().BeSameAs(_serviceProvider.Object);
+        context.CancellationToken.IsCancellationRequested.Should().BeFalse();
     }
 }

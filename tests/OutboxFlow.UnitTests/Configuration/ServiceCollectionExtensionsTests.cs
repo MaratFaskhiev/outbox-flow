@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OutboxFlow.Configuration;
 using Xunit;
@@ -17,7 +18,7 @@ public sealed class ServiceCollectionExtensionsTests : IDisposable
     [Fact]
     public void AddOutbox_ActionIsNull_ThrowsNullReferenceException()
     {
-        Assert.Throws<ArgumentNullException>(() => _services.Object.AddOutbox(null!));
+        FluentActions.Invoking(() => _services.Object.AddOutbox(null!)).Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
@@ -29,6 +30,6 @@ public sealed class ServiceCollectionExtensionsTests : IDisposable
         var isInvoked = false;
         _services.Object.AddOutbox(_ => { isInvoked = true; });
 
-        Assert.True(isInvoked);
+        isInvoked.Should().BeTrue();
     }
 }

@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using FluentAssertions;
+using Moq;
 using OutboxFlow.Produce;
 using Xunit;
 
@@ -27,7 +28,7 @@ public sealed class PipelineStepTests : IDisposable
 
         await pipelineStep.RunAsync(input, Mock.Of<IProduceContext>());
 
-        Assert.True(isInvoked);
+        isInvoked.Should().BeTrue();
     }
 
     [Fact]
@@ -60,7 +61,7 @@ public sealed class PipelineStepTests : IDisposable
 
         await pipelineStep.RunAsync(input, Mock.Of<IProduceContext>());
 
-        Assert.True(isInvoked);
+        isInvoked.Should().BeTrue();
     }
 
     [Fact]

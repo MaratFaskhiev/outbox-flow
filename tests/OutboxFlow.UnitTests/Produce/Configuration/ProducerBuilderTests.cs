@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OutboxFlow.Produce;
 using OutboxFlow.Produce.Configuration;
@@ -31,13 +32,13 @@ public sealed class ProducerBuilderTests : IDisposable
     {
         _builder.ForMessage<string>(_ => { });
 
-        Assert.Throws<InvalidOperationException>(() => _builder.ForMessage<string>(_ => { }));
+        FluentActions.Invoking(() => _builder.ForMessage<string>(_ => { })).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
     public void Build_OutboxStorageRegistrarIsNotSet_ThrowsInvalidOperationException()
     {
-        Assert.Throws<InvalidOperationException>(() => _builder.Build(_services.Object));
+        FluentActions.Invoking(() => _builder.Build(_services.Object)).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -93,14 +94,14 @@ public sealed class ProducerBuilderTests : IDisposable
 
         _builder.Build(_services.Object);
 
-        Assert.NotNull(pipelineRegistry);
+        pipelineRegistry.Should().NotBeNull();
 
         var pipeline = pipelineRegistry.GetPipeline<string>();
 
-        Assert.NotNull(pipeline);
+        pipeline.Should().NotBeNull();
 
         await pipeline.RunAsync(string.Empty, Mock.Of<IProduceContext>());
 
-        Assert.True(isInvoked);
+        isInvoked.Should().BeTrue();
     }
 }
