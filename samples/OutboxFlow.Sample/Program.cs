@@ -9,6 +9,7 @@ using OutboxFlow.Postgres;
 using OutboxFlow.Produce.Configuration;
 using OutboxFlow.Sample.Models;
 using OutboxFlow.Serialization;
+using OutboxFlow.Storage;
 
 namespace OutboxFlow.Sample;
 
@@ -48,6 +49,8 @@ public static class Program
         };
 
         services
+            // Register a custom IKafkaProducerBuilder
+            .AddSingleton<IKafkaProducerBuilder, CustomKafkaProducerBuilder>()
             // Register Apache Kafka dependencies
             .AddKafka()
             // Register the outbox dependencies
@@ -88,7 +91,8 @@ public static class Program
                             .UsePostgres(hostBuilderContext.Configuration.GetConnectionString("Postgres")!)
                             // Configure the default pipeline for outbox messages.
                             // Default route will be used for all destinations which are not configured explicitly
-                            .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
+                            .SetDefaultRoute(pipeline =>
+                                pipeline.SendToKafka<IOutboxMessage, CustomKafkaProducerBuilder>(producerConfig))
                     )
             );
 

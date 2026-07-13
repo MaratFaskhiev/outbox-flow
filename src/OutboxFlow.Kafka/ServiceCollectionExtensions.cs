@@ -15,6 +15,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddKafka(this IServiceCollection services)
     {
         services.TryAddSingleton<DefaultKafkaProducerBuilder>();
+        services.TryAddSingleton<IKafkaProducerBuilder>(sp => sp.GetRequiredService<DefaultKafkaProducerBuilder>());
         services.TryAddSingleton<IKafkaProducerRegistry, KafkaProducerRegistry>();
 
         return services;

@@ -49,6 +49,22 @@ public sealed class KafkaProducerRegistryTests : IDisposable
     }
 
     [Fact]
+    public async Task DisposeAsync_DisposesProducers()
+    {
+        var producerConfig = new ProducerConfig();
+
+        var producer = new Mock<IProducer<byte[], byte[]>>(MockBehavior.Strict);
+        producer.Setup(x => x.Flush(It.IsAny<CancellationToken>()));
+        producer.Setup(x => x.Dispose());
+        _builder.Setup(x => x.Create(producerConfig)).Returns(producer.Object);
+
+        _registry.GetOrCreate(_builder.Object, producerConfig);
+        await _registry.DisposeAsync();
+
+        producer.Verify(x => x.Dispose(), Times.Once);
+    }
+
+    [Fact]
     public void Remove_ProducerIsFound_RemovesProducer()
     {
         var producerConfig = new ProducerConfig();

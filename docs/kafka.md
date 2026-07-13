@@ -12,7 +12,24 @@ services.AddKafka();
 
 This registers:
 - `DefaultKafkaProducerBuilder` — the default Kafka producer builder
+- `IKafkaProducerBuilder` — registered via factory that returns the same `DefaultKafkaProducerBuilder` instance
 - `IKafkaProducerRegistry` — manages producer instances and reuses them across messages
+
+### Recommended Configuration
+
+For reliable outbox delivery with exactly-once semantics, use `WithOutboxDefaults()`:
+
+```csharp
+var producerConfig = new ProducerConfig
+{
+    BootstrapServers = "localhost:9092"
+}.WithOutboxDefaults();
+```
+
+This sets `EnableIdempotence=true` and `Acks=All` unless explicitly overridden.
+
+> **Note:** `ProducerConfig` is compared by reference equality in the producer registry.
+> Always reuse the same config instance for all messages sharing the same broker settings.
 
 ## SendToKafka
 
@@ -80,7 +97,7 @@ services.AddSingleton<IKafkaProducerBuilder, CustomKafkaProducerBuilder>();
 
 // In consumer configuration:
 consumer.SetDefaultRoute(pipeline =>
-    pipeline.SendToKafka<CustomKafkaProducerBuilder>(producerConfig)
+    pipeline.SendToKafka<IOutboxMessage, CustomKafkaProducerBuilder>(producerConfig)
 );
 ```
 

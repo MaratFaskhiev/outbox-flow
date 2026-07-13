@@ -1,28 +1,40 @@
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace OutboxFlow.Kafka.UnitTests;
 
-public sealed class ServiceCollectionExtensionsTests : IDisposable
+public sealed class ServiceCollectionExtensionsTests
 {
-    private readonly Mock<IServiceCollection> _services = new(MockBehavior.Strict);
-
-    public void Dispose()
-    {
-        Mock.VerifyAll(_services);
-    }
-
     [Fact]
     public void AddKafka_RegistersKafkaProducerRegistry()
     {
-        _services.Setup(x => x.Count).Returns(0);
-        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
-            d.ServiceType == typeof(IKafkaProducerRegistry) && d.ImplementationType == typeof(KafkaProducerRegistry))));
-        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
-            d.ServiceType == typeof(DefaultKafkaProducerBuilder) &&
-            d.ImplementationType == typeof(DefaultKafkaProducerBuilder))));
+        var services = new ServiceCollection();
 
-        _services.Object.AddKafka();
+        services.AddSingleton<ILogger<DefaultKafkaProducerBuilder>>(
+            NullLogger<DefaultKafkaProducerBuilder>.Instance);
+        services.AddKafka();
+
+        var sp = services.BuildServiceProvider();
+        var registry = sp.GetRequiredService<IKafkaProducerRegistry>();
+        registry.Should().BeOfType<KafkaProducerRegistry>();
+    }
+
+    [Fact]
+    public void AddKafka_IKafkaProducerBuilder_ResolvesToSameInstanceAsDefaultKafkaProducerBuilder()
+    {
+        var services = new ServiceCollection();
+
+        services.AddSingleton<ILogger<DefaultKafkaProducerBuilder>>(
+            NullLogger<DefaultKafkaProducerBuilder>.Instance);
+        services.AddKafka();
+
+        var sp = services.BuildServiceProvider();
+        var asInterface = sp.GetRequiredService<IKafkaProducerBuilder>();
+        var asConcrete = sp.GetRequiredService<DefaultKafkaProducerBuilder>();
+
+        asInterface.Should().BeSameAs(asConcrete);
     }
 }
