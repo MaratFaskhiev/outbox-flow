@@ -13,7 +13,7 @@ public interface IOutboxMessage
     /// <summary>
     /// Gets the message headers.
     /// </summary>
-    public IDictionary<string, string> Headers { get; set; }
+    public IDictionary<string, string> Headers { get; }
 
 #pragma warning disable CA1819
     /// <summary>

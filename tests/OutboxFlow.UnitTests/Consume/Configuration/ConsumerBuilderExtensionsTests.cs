@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using FluentAssertions;
 using Moq;
 using OutboxFlow.Consume.Configuration;
 using OutboxFlow.Storage.Configuration;
@@ -6,77 +7,74 @@ using Xunit;
 
 namespace OutboxFlow.UnitTests.Consume.Configuration;
 
-public sealed class ConsumerBuilderExtensionsTests : IDisposable
+public sealed class ConsumerBuilderExtensionsTests
 {
-    private readonly Mock<IConsumerBuilder> _builder;
-
-    public ConsumerBuilderExtensionsTests()
-    {
-        _builder = new Mock<IConsumerBuilder>(MockBehavior.Strict);
-    }
-
-    public void Dispose()
-    {
-        Mock.VerifyAll(_builder);
-    }
-
     [Fact]
     public void SetOutboxStorageRegistrar_SetsOutboxStorageRegistrar()
     {
+        var builder = new Mock<IConsumerBuilder>(MockBehavior.Strict);
         var outboxStorageRegistrar = Mock.Of<IOutboxStorageRegistrar>();
 
-        _builder.SetupSet(x => x.OutboxStorageRegistrar = outboxStorageRegistrar);
+        builder.SetupSet(x => x.OutboxStorageRegistrar = outboxStorageRegistrar);
 
-        _builder.Object.SetOutboxStorageRegistrar(outboxStorageRegistrar);
+        builder.Object.SetOutboxStorageRegistrar(outboxStorageRegistrar);
 
-        _builder.VerifySet(x => x.OutboxStorageRegistrar = outboxStorageRegistrar);
+        builder.VerifySet(x => x.OutboxStorageRegistrar = outboxStorageRegistrar);
     }
 
     [Fact]
     public void SetBatchSize_SetsBatchSize()
     {
-        var batchSize = 3;
+        const int batchSize = 3;
+        var builder = new Mock<IConsumerBuilder>(MockBehavior.Strict);
 
-        _builder.SetupSet(x => x.BatchSize = batchSize);
+        builder.SetupSet(x => x.BatchSize = batchSize);
 
-        _builder.Object.SetBatchSize(batchSize);
+        var result = builder.Object.SetBatchSize(batchSize);
 
-        _builder.VerifySet(x => x.BatchSize = batchSize);
+        result.Should().BeSameAs(builder.Object);
+        builder.VerifySet(x => x.BatchSize = batchSize);
     }
 
     [Fact]
     public void SetConsumeDelay_SetsConsumeDelay()
     {
         var consumeDelay = TimeSpan.FromDays(1);
+        var builder = new Mock<IConsumerBuilder>(MockBehavior.Strict);
 
-        _builder.SetupSet(x => x.ConsumeDelay = consumeDelay);
+        builder.SetupSet(x => x.ConsumeDelay = consumeDelay);
 
-        _builder.Object.SetConsumeDelay(consumeDelay);
+        var result = builder.Object.SetConsumeDelay(consumeDelay);
 
-        _builder.VerifySet(x => x.ConsumeDelay = consumeDelay);
+        result.Should().BeSameAs(builder.Object);
+        builder.VerifySet(x => x.ConsumeDelay = consumeDelay);
     }
 
     [Fact]
     public void SetIsolationLevel_SetsIsolationLevel()
     {
         var isolationLevel = IsolationLevel.Serializable;
+        var builder = new Mock<IConsumerBuilder>(MockBehavior.Strict);
 
-        _builder.SetupSet(x => x.IsolationLevel = isolationLevel);
+        builder.SetupSet(x => x.IsolationLevel = isolationLevel);
 
-        _builder.Object.SetIsolationLevel(isolationLevel);
+        var result = builder.Object.SetIsolationLevel(isolationLevel);
 
-        _builder.VerifySet(x => x.IsolationLevel = isolationLevel);
+        result.Should().BeSameAs(builder.Object);
+        builder.VerifySet(x => x.IsolationLevel = isolationLevel);
     }
 
     [Fact]
     public void SetTimeout_SetsTimeout()
     {
         var timout = TimeSpan.FromDays(1);
+        var builder = new Mock<IConsumerBuilder>(MockBehavior.Strict);
 
-        _builder.SetupSet(x => x.Timeout = timout);
+        builder.SetupSet(x => x.Timeout = timout);
 
-        _builder.Object.SetTimeout(timout);
+        var result = builder.Object.SetTimeout(timout);
 
-        _builder.VerifySet(x => x.Timeout = timout);
+        result.Should().BeSameAs(builder.Object);
+        builder.VerifySet(x => x.Timeout = timout);
     }
 }

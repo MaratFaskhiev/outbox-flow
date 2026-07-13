@@ -76,18 +76,20 @@ public sealed class OutboxLockManagerTests
     {
         await using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
 
-        var lock1 = await _manager.LockAsync(TimeSpan.FromSeconds(1), transaction, CancellationToken.None);
+        await using var transaction1 = await connection.BeginTransactionAsync();
+        var lock1 = await _manager.LockAsync(TimeSpan.FromSeconds(1), transaction1, CancellationToken.None);
         lock1.Should().NotBeNull();
+        await _manager.ReleaseAsync(lock1, transaction1, CancellationToken.None);
+        await transaction1.CommitAsync();
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var lock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
+        await using var transaction2 = await connection.BeginTransactionAsync();
+        var lock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction2, CancellationToken.None);
         lock2.Should().NotBeNull();
-
-        await _manager.ReleaseAsync(lock2, transaction, CancellationToken.None);
-        await transaction.CommitAsync();
+        await _manager.ReleaseAsync(lock2, transaction2, CancellationToken.None);
+        await transaction2.CommitAsync();
     }
 
     [Fact]
