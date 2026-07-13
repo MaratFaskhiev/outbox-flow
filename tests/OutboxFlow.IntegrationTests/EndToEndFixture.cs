@@ -6,13 +6,13 @@ namespace OutboxFlow.IntegrationTests;
 
 public sealed class EndToEndFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:15-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17")
         .WithResourceMapping("postgres.sql", "/docker-entrypoint-initdb.d")
-        .WithReuse(true)
         .Build();
 
-    private readonly KafkaContainer _kafka = new KafkaBuilder("confluentinc/cp-kafka:7.7.1")
-        .WithReuse(true)
+    private readonly KafkaContainer _kafka = new KafkaBuilder("apache/kafka:3.9.0")
+        .WithKRaft()
+        .WithVendor(KafkaVendor.ApacheSoftwareFoundation)
         .Build();
 
     public string ConnectionString => _postgres.GetConnectionString();
