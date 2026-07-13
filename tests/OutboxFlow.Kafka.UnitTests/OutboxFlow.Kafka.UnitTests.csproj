@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
         <ProjectReference Include="..\..\src\OutboxFlow.Kafka\OutboxFlow.Kafka.csproj" />
     </ItemGroup>
 
