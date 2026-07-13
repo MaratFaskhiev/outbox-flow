@@ -1,13 +1,12 @@
-﻿using Testcontainers.PostgreSql;
+using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace OutboxFlow.Postgres.IntegrationTests;
 
 public sealed class DatabaseFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgreSqlContainer = new PostgreSqlBuilder("postgres:15-alpine")
+    private readonly PostgreSqlContainer _postgreSqlContainer = new PostgreSqlBuilder("postgres:17")
         .WithResourceMapping("postgres.sql", "/docker-entrypoint-initdb.d")
-        .WithReuse(true)
         .Build();
 
     public string ConnectionString => _postgreSqlContainer.GetConnectionString();

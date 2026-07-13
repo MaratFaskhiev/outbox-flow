@@ -1,11 +1,13 @@
-﻿using Testcontainers.Kafka;
+using Testcontainers.Kafka;
 using Xunit;
 
 namespace OutboxFlow.Kafka.IntegrationTests;
 
 public sealed class KafkaFixture : IAsyncLifetime
 {
-    private readonly KafkaContainer _kafkaContainer = new KafkaBuilder("confluentinc/cp-kafka:7.7.1")
+    private readonly KafkaContainer _kafkaContainer = new KafkaBuilder("apache/kafka:3.9.0")
+        .WithKRaft()
+        .WithVendor(KafkaVendor.ApacheSoftwareFoundation)
         .Build();
 
     public string BootstrapAddress => _kafkaContainer.GetBootstrapAddress();
