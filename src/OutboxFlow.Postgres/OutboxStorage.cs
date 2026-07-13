@@ -80,7 +80,7 @@ where id = any(@ids);";
     }
 
     /// <inheritdoc />
-    public async ValueTask SaveAsync(IProduceContext context)
+    public async ValueTask SaveAsync(IProduceContext context, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(context.Destination))
             throw new InvalidOperationException("Destination must be defined.");
@@ -98,7 +98,9 @@ where id = any(@ids);";
         command.Parameters.AddWithValue("value", context.Value);
         command.Parameters.AddWithValue("created_at", DateTime.UtcNow);
 
-        await command.ExecuteNonQueryAsync(context.CancellationToken).ConfigureAwait(false);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+            context.CancellationToken, cancellationToken);
+        await command.ExecuteNonQueryAsync(linkedCts.Token).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

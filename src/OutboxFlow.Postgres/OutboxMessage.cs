@@ -31,7 +31,7 @@ public sealed class OutboxMessage : IOutboxMessage
     public string? Destination { get; }
 
     /// <inheritdoc />
-    public IDictionary<string, string> Headers { get; set; }
+    public IDictionary<string, string> Headers { get; }
 
 #pragma warning disable CA1819
     /// <inheritdoc />

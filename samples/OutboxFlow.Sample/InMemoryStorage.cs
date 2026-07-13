@@ -5,7 +5,7 @@ using OutboxFlow.Storage;
 
 namespace OutboxFlow.Sample;
 
-public sealed class InMemoryStorage : IOutboxStorage
+internal sealed class InMemoryStorage : IOutboxStorage
 {
     private readonly ConcurrentQueue<IOutboxMessage> _messages = new();
 
@@ -15,15 +15,12 @@ public sealed class InMemoryStorage : IOutboxStorage
         CancellationToken cancellationToken = default)
     {
         var result = new List<IOutboxMessage>(batchSize);
-        while (result.Count < batchSize && _messages.TryDequeue(out var message))
-        {
-            result.Add(message);
-        }
+        while (result.Count < batchSize && _messages.TryDequeue(out var message)) result.Add(message);
 
         return new ValueTask<IReadOnlyCollection<IOutboxMessage>>(result.AsReadOnly());
     }
 
-    public ValueTask SaveAsync(IProduceContext context)
+    public ValueTask SaveAsync(IProduceContext context, CancellationToken cancellationToken = default)
     {
         var message = new InMemoryMessage(
             context.Destination!,
@@ -60,7 +57,7 @@ public sealed class InMemoryStorage : IOutboxStorage
 
         public string? Destination { get; }
 
-        public IDictionary<string, string> Headers { get; set; }
+        public IDictionary<string, string> Headers { get; }
 
         public byte[]? Key { get; }
 

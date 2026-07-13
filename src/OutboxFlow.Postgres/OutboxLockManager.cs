@@ -9,12 +9,13 @@ namespace OutboxFlow.Postgres;
 /// </summary>
 public sealed class OutboxLockManager : IOutboxLockManager
 {
-    private const string CountCommandText = @"
-lock table outbox_state in access exclusive mode nowait;
+    private const long LockKey = 0x4F_55_54_42_4F_58;
 
-select count(id) from outbox_state
-where expire_at > clock_timestamp();
-";
+    private const string TryLockCommandText =
+        "SELECT pg_try_advisory_xact_lock(@lock_key);";
+
+    private const string CheckLockCommandText =
+        "SELECT 1 FROM outbox_state WHERE expire_at >= clock_timestamp();";
 
     private const string InsertCommandText = @"
 insert into outbox_state (expire_at) values (clock_timestamp() + @timeout)
@@ -26,25 +27,23 @@ delete from outbox_state
 where expire_at < clock_timestamp() or id = @id;
 ";
 
-    private const string LockNotAvailableCode = "55P03";
-
     /// <inheritdoc />
     public async ValueTask<IOutboxLock?> LockAsync(
         TimeSpan lockTimeout, IDbTransaction transaction, CancellationToken cancellationToken = default)
     {
         var connection = EnsureConnection(transaction);
 
-        using var countCommand = connection.CreateCommand();
-        countCommand.CommandText = CountCommandText;
-        try
-        {
-            var count = (long?) await countCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-            if (count > 0) return null;
-        }
-        catch (PostgresException exception) when (exception.SqlState == LockNotAvailableCode)
-        {
-            return null;
-        }
+        using var checkCommand = connection.CreateCommand();
+        checkCommand.CommandText = CheckLockCommandText;
+        var existingLock = await checkCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        if (existingLock != null) return null;
+
+        using var tryLockCommand = connection.CreateCommand();
+        tryLockCommand.CommandText = TryLockCommandText;
+        tryLockCommand.Parameters.AddWithValue("@lock_key", LockKey);
+
+        var lockAcquired = (bool?) await tryLockCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        if (lockAcquired != true) return null;
 
         using var insertCommand = connection.CreateCommand();
         insertCommand.CommandText = InsertCommandText;

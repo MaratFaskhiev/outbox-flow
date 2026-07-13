@@ -30,7 +30,7 @@ public interface IConsumerBuilder
     IsolationLevel IsolationLevel { get; set; }
 
     /// <summary>
-    /// Get or sets the consume operation timeout.
+    /// Gets or sets the consume operation timeout.
     /// </summary>
     TimeSpan Timeout { get; set; }
 
