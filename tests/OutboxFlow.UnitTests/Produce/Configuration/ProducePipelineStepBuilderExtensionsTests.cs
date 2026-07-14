@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Data;
+using FluentAssertions;
 using Moq;
 using OutboxFlow.Produce;
 using OutboxFlow.Produce.Configuration;
@@ -298,5 +299,283 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
         await pipelineStepAction!.Invoke(input, _produceContext.Object);
 
         outboxStorage.Verify(x => x.SaveAsync(_produceContext.Object), Times.Once);
+    }
+
+    [Fact]
+    public async Task ForEach_RunsSubPipelineForAllItemsAndCollectsContexts()
+    {
+        var items = new[] {"a", "b", "c"};
+        var itemKeys = new Dictionary<string, byte[]>
+        {
+            ["a"] = [1],
+            ["b"] = [2],
+            ["c"] = [3]
+        };
+
+        Func<IReadOnlyCollection<string>, IProduceContext,
+            ValueTask<IReadOnlyCollection<IProduceContext>>> pipelineStepAction = null!;
+        var forEachBuilder =
+            new Mock<IProducePipelineStepBuilder<IReadOnlyCollection<string>, IReadOnlyCollection<string>>>(
+                MockBehavior.Strict);
+        forEachBuilder
+            .Setup(x => x.AddAsyncStep(
+                It.IsAny<Func<IReadOnlyCollection<string>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>>>()))
+            .Returns((
+                Func<IReadOnlyCollection<string>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>> action) =>
+            {
+                pipelineStepAction = action;
+                return Mock.Of<IProducePipelineStepBuilder<
+                    IReadOnlyCollection<string>, IReadOnlyCollection<IProduceContext>>>();
+            });
+
+        var transaction = new Mock<IDbTransaction>(MockBehavior.Strict);
+        var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Strict);
+        var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
+        outerContext.Setup(x => x.Transaction).Returns(transaction.Object);
+        outerContext.Setup(x => x.ServiceProvider).Returns(serviceProvider.Object);
+        outerContext.Setup(x => x.CancellationToken).Returns(CancellationToken.None);
+        outerContext.Setup(x => x.Headers).Returns(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+
+        forEachBuilder.Object.ForEach(sub =>
+        {
+            sub.AddSyncStep((item, ctx) =>
+            {
+                ctx.Key = itemKeys[item];
+                return item;
+            });
+        });
+
+        var result = await pipelineStepAction!.Invoke(items, outerContext.Object);
+
+        result.Should().HaveCount(3);
+        result.ElementAt(0).Key.Should().BeEquivalentTo(itemKeys["a"]);
+        result.ElementAt(1).Key.Should().BeEquivalentTo(itemKeys["b"]);
+        result.ElementAt(2).Key.Should().BeEquivalentTo(itemKeys["c"]);
+
+        Mock.VerifyAll(forEachBuilder, transaction, serviceProvider, outerContext);
+    }
+
+    [Fact]
+    public async Task ForEach_WithSubPipelineIncludingSave_SavesPerElement()
+    {
+        var items = new[] {"x", "y"};
+
+        Func<IReadOnlyCollection<string>, IProduceContext,
+            ValueTask<IReadOnlyCollection<IProduceContext>>> pipelineStepAction = null!;
+        var forEachBuilder =
+            new Mock<IProducePipelineStepBuilder<IReadOnlyCollection<string>, IReadOnlyCollection<string>>>(
+                MockBehavior.Strict);
+        forEachBuilder
+            .Setup(x => x.AddAsyncStep(
+                It.IsAny<Func<IReadOnlyCollection<string>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>>>()))
+            .Returns((
+                Func<IReadOnlyCollection<string>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>> action) =>
+            {
+                pipelineStepAction = action;
+                return Mock.Of<IProducePipelineStepBuilder<
+                    IReadOnlyCollection<string>, IReadOnlyCollection<IProduceContext>>>();
+            });
+
+        var outboxStorage = new Mock<IOutboxStorage>(MockBehavior.Strict);
+        outboxStorage.Setup(x => x.SaveAsync(It.IsAny<IProduceContext>()))
+            .Returns(new ValueTask());
+
+        var transaction = new Mock<IDbTransaction>(MockBehavior.Strict);
+        var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Strict);
+        serviceProvider.Setup(x => x.GetService(typeof(IOutboxStorage)))
+            .Returns(outboxStorage.Object);
+
+        var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
+        outerContext.Setup(x => x.Transaction).Returns(transaction.Object);
+        outerContext.Setup(x => x.ServiceProvider).Returns(serviceProvider.Object);
+        outerContext.Setup(x => x.CancellationToken).Returns(CancellationToken.None);
+        outerContext.Setup(x => x.Headers).Returns(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+
+        forEachBuilder.Object.ForEach(sub =>
+        {
+            sub.AddSyncStep((item, ctx) =>
+            {
+                ctx.Key = new[] {(byte) item[0]};
+                return item;
+            }).Save();
+        });
+
+        var result = await pipelineStepAction!.Invoke(items, outerContext.Object);
+
+        result.Should().HaveCount(2);
+        outboxStorage.Verify(x => x.SaveAsync(It.IsAny<IProduceContext>()), Times.Exactly(2));
+
+        Mock.VerifyAll(forEachBuilder, outboxStorage, transaction, serviceProvider, outerContext);
+    }
+
+    [Fact]
+    public async Task ForEach_OnEmptyCollection_ProducesEmptyContextList()
+    {
+        var items = Array.Empty<string>();
+
+        Func<IReadOnlyCollection<string>, IProduceContext,
+            ValueTask<IReadOnlyCollection<IProduceContext>>> pipelineStepAction = null!;
+        var forEachBuilder =
+            new Mock<IProducePipelineStepBuilder<IReadOnlyCollection<string>, IReadOnlyCollection<string>>>(
+                MockBehavior.Strict);
+        forEachBuilder
+            .Setup(x => x.AddAsyncStep(
+                It.IsAny<Func<IReadOnlyCollection<string>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>>>()))
+            .Returns((
+                Func<IReadOnlyCollection<string>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>> action) =>
+            {
+                pipelineStepAction = action;
+                return Mock.Of<IProducePipelineStepBuilder<
+                    IReadOnlyCollection<string>, IReadOnlyCollection<IProduceContext>>>();
+            });
+
+        var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
+
+        forEachBuilder.Object.ForEach(sub => { sub.AddSyncStep((item, ctx) => item); });
+
+        var result = await pipelineStepAction!.Invoke(items, outerContext.Object);
+
+        result.Should().BeEmpty();
+
+        Mock.VerifyAll(forEachBuilder);
+    }
+
+    [Fact]
+    public async Task ForEach_SubPipelineError_PropagatesAndAbortsCollection()
+    {
+        var items = new[] {"ok", "fail", "never"};
+
+        Func<IReadOnlyCollection<string>, IProduceContext,
+            ValueTask<IReadOnlyCollection<IProduceContext>>> pipelineStepAction = null!;
+        var forEachBuilder =
+            new Mock<IProducePipelineStepBuilder<IReadOnlyCollection<string>, IReadOnlyCollection<string>>>(
+                MockBehavior.Strict);
+        forEachBuilder
+            .Setup(x => x.AddAsyncStep(
+                It.IsAny<Func<IReadOnlyCollection<string>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>>>()))
+            .Returns((
+                Func<IReadOnlyCollection<string>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>> action) =>
+            {
+                pipelineStepAction = action;
+                return Mock.Of<IProducePipelineStepBuilder<
+                    IReadOnlyCollection<string>, IReadOnlyCollection<IProduceContext>>>();
+            });
+
+        var transaction = new Mock<IDbTransaction>(MockBehavior.Strict);
+        var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Strict);
+        var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
+        outerContext.Setup(x => x.Transaction).Returns(transaction.Object);
+        outerContext.Setup(x => x.ServiceProvider).Returns(serviceProvider.Object);
+        outerContext.Setup(x => x.CancellationToken).Returns(CancellationToken.None);
+        outerContext.Setup(x => x.Headers).Returns(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+
+        forEachBuilder.Object.ForEach(sub =>
+        {
+            sub.AddSyncStep((item, ctx) =>
+            {
+                if (item == "fail") throw new InvalidOperationException("test error");
+                return item;
+            });
+        });
+
+        Func<Task> act = () => pipelineStepAction!.Invoke(items, outerContext.Object).AsTask();
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("test error");
+
+        Mock.VerifyAll(forEachBuilder, transaction, serviceProvider, outerContext);
+    }
+
+    [Fact]
+    public async Task SaveBatch_CallsSaveBatchAsyncOnStorage()
+    {
+        var contexts = new List<IProduceContext>
+        {
+            new Mock<IProduceContext>(MockBehavior.Strict).Object,
+            new Mock<IProduceContext>(MockBehavior.Strict).Object
+        };
+
+        Func<IReadOnlyCollection<IProduceContext>, IProduceContext,
+            ValueTask<IReadOnlyCollection<IProduceContext>>> pipelineStepAction = null!;
+        var batchBuilder =
+            new Mock<IProducePipelineStepBuilder<IReadOnlyCollection<object>,
+                IReadOnlyCollection<IProduceContext>>>(MockBehavior.Strict);
+        batchBuilder
+            .Setup(x => x.AddAsyncStep(
+                It.IsAny<Func<IReadOnlyCollection<IProduceContext>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>>>()))
+            .Returns((
+                Func<IReadOnlyCollection<IProduceContext>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>> action) =>
+            {
+                pipelineStepAction = action;
+                return Mock.Of<IProducePipelineStepBuilder<
+                    IReadOnlyCollection<IProduceContext>, IReadOnlyCollection<IProduceContext>>>();
+            });
+
+        var outboxStorage = new Mock<IOutboxStorage>(MockBehavior.Strict);
+        var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Strict);
+
+        outboxStorage.Setup(x => x.SaveBatchAsync(contexts))
+            .Returns(new ValueTask());
+        serviceProvider.Setup(x => x.GetService(typeof(IOutboxStorage)))
+            .Returns(outboxStorage.Object);
+
+        var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
+        outerContext.Setup(x => x.ServiceProvider).Returns(serviceProvider.Object);
+
+        batchBuilder.Object.SaveBatch();
+
+        var result = await pipelineStepAction!.Invoke(contexts, outerContext.Object);
+
+        result.Should().BeSameAs(contexts);
+        outboxStorage.Verify(x => x.SaveBatchAsync(contexts), Times.Once);
+
+        Mock.VerifyAll(batchBuilder, outboxStorage, serviceProvider, outerContext);
+    }
+
+    [Fact]
+    public async Task SaveBatch_WithEmptyCollection_DoesNotCallStorage()
+    {
+        var contexts = Array.Empty<IProduceContext>();
+
+        Func<IReadOnlyCollection<IProduceContext>, IProduceContext,
+            ValueTask<IReadOnlyCollection<IProduceContext>>> pipelineStepAction = null!;
+        var batchBuilder =
+            new Mock<IProducePipelineStepBuilder<IReadOnlyCollection<object>,
+                IReadOnlyCollection<IProduceContext>>>(MockBehavior.Strict);
+        batchBuilder
+            .Setup(x => x.AddAsyncStep(
+                It.IsAny<Func<IReadOnlyCollection<IProduceContext>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>>>()))
+            .Returns((
+                Func<IReadOnlyCollection<IProduceContext>, IProduceContext,
+                    ValueTask<IReadOnlyCollection<IProduceContext>>> action) =>
+            {
+                pipelineStepAction = action;
+                return Mock.Of<IProducePipelineStepBuilder<
+                    IReadOnlyCollection<IProduceContext>, IReadOnlyCollection<IProduceContext>>>();
+            });
+
+        var outboxStorage = new Mock<IOutboxStorage>(MockBehavior.Strict);
+
+        var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
+
+        batchBuilder.Object.SaveBatch();
+
+        var result = await pipelineStepAction!.Invoke(contexts, outerContext.Object);
+
+        result.Should().BeEmpty();
+        outboxStorage.Verify(
+            x => x.SaveBatchAsync(It.IsAny<IReadOnlyCollection<IProduceContext>>()), Times.Never);
+
+        Mock.VerifyAll(batchBuilder, outboxStorage);
     }
 }

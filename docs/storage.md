@@ -20,9 +20,10 @@ Represents a single outbox message stored in the outbox table.
 The main storage interface for persisting and retrieving messages.
 
 | Method | Description |
-|---|---|
+|---|---|---|
 | `FetchAsync(int batchSize, IDbTransaction transaction, CancellationToken)` | Fetches a batch of messages from the outbox table. |
-| `SaveAsync(IProduceContext context)` | Saves a new message to the outbox table. |
+| `SaveAsync(IProduceContext context)` | Saves a single message to the outbox table. |
+| `SaveBatchAsync(IReadOnlyCollection<IProduceContext> contexts, CancellationToken)` | Saves multiple messages in a single storage operation (e.g., `NpgsqlBatch`). |
 | `DeleteAsync(IReadOnlyCollection<IOutboxMessage>, IDbTransaction, CancellationToken)` | Deletes processed messages from the outbox table. |
 
 ### IOutboxLockManager

@@ -34,7 +34,9 @@ public sealed class ProducerBuilder : IProducerBuilder
 
         var registry = new ProducePipelineRegistry(_messagePipelines);
         services.TryAddSingleton<IProducePipelineRegistry>(registry);
-        services.TryAddScoped<IProducer, Producer>();
+        services.TryAddScoped<IProducer>(sp => new Producer(
+            sp.GetRequiredService<IProducePipelineRegistry>(),
+            sp.GetRequiredService<IServiceProvider>()));
 
         OutboxStorageRegistrar.Register(services);
     }

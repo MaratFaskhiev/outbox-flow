@@ -143,6 +143,32 @@ OutboxConsumerService (BackgroundService)
 
 If `ConsumeAsync` fails (lock not acquired, error in pipeline), the service waits and retries.
 
+### 3. Batch Produce
+
+Batch produce uses `Producer.ProduceAsync<IReadOnlyCollection<T>>(...)` with a pipeline configured with `ForEach` and `SaveBatch`:
+
+```
+Application Code
+     │
+     ▼
+Producer.ProduceAsync<IReadOnlyCollection<T>>
+     │  Gets pipeline from IProducePipelineRegistry
+     │  ForEach step — for each message:
+     │     Creates ProduceContext (inherits outer headers)
+     │     Runs sub-pipeline:
+     │       [Serialize] [SetDestination] [SetKey] ...
+     ▼
+     All messages processed
+     │
+     ▼
+   SaveBatch — single storage operation (e.g., NpgsqlBatch)
+     │
+     ▼
+   outbox_message table (within the same DB transaction)
+```
+
+Each message runs through the full pipeline individually, but all messages are persisted in a single storage operation. If any pipeline step throws, the exception propagates and the caller's transaction handles rollback — no partial batch is saved.
+
 ## Extension Points
 
 | Interface | Purpose | Implement to... |

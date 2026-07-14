@@ -153,4 +153,67 @@ public static class ProducePipelineStepBuilderExtensions
             return message;
         });
     }
+
+    /// <summary>
+    /// Iterates over each item in the collection, runs the configured sub-pipeline for each,
+    /// and collects the resulting produce contexts.
+    /// </summary>
+    /// <param name="step">Step.</param>
+    /// <param name="configure">Configures the sub-pipeline for each item.</param>
+    /// <typeparam name="TItem">Item type.</typeparam>
+    public static IProducePipelineStepBuilder<
+            IReadOnlyCollection<TItem>,
+            IReadOnlyCollection<IProduceContext>>
+        ForEach<TItem>(
+            this IProducePipelineStepBuilder<
+                IReadOnlyCollection<TItem>,
+                IReadOnlyCollection<TItem>> step,
+            Action<IProducePipelineBuilder<TItem>> configure)
+    {
+        var subBuilder = new ProducePipelineBuilder<TItem>();
+        configure(subBuilder);
+        var subPipeline = subBuilder.Build();
+
+        return step.AddAsyncStep(async (collection, context) =>
+        {
+            var contexts = new List<IProduceContext>();
+            foreach (var item in collection)
+            {
+                var subContext = new ProduceContext(
+                    context.Transaction,
+                    context.ServiceProvider,
+                    context.CancellationToken,
+                    context.Headers);
+
+                await subPipeline.RunAsync(item, subContext).ConfigureAwait(false);
+
+                contexts.Add(subContext);
+            }
+
+            return (IReadOnlyCollection<IProduceContext>) contexts;
+        });
+    }
+
+    /// <summary>
+    /// Saves all collected produce contexts to the outbox storage in a single batch operation.
+    /// </summary>
+    /// <param name="step">Step.</param>
+    public static IProducePipelineStepBuilder<
+        IReadOnlyCollection<IProduceContext>,
+        IReadOnlyCollection<IProduceContext>> SaveBatch<TSource>(
+        this IProducePipelineStepBuilder<
+            IReadOnlyCollection<TSource>,
+            IReadOnlyCollection<IProduceContext>> step)
+    {
+        return step.AddAsyncStep(async (contexts, context) =>
+        {
+            if (contexts.Count == 0)
+                return contexts;
+
+            var storage = context.ServiceProvider.GetRequiredService<IOutboxStorage>();
+            await storage.SaveBatchAsync(contexts).ConfigureAwait(false);
+
+            return contexts;
+        });
+    }
 }

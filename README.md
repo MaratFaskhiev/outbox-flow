@@ -135,6 +135,51 @@ private async Task ProduceSampleMessageAsync(CancellationToken cancellationToken
 }
 ```
 
+For high-throughput scenarios, produce multiple messages in a single batch by registering a pipeline for a collection type:
+
+```csharp
+// Configuration — register a pipeline for a collection type
+.ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
+    pipeline
+        .ForEach<SampleTextModel>(sub =>
+        {
+            sub.AddSyncStep((message, _) => new Protos.SampleTextModel
+            {
+                Value = message.Value
+            })
+            .SerializeWithProtobuf()
+            .SetDestination("topic");
+        })
+        .SaveBatch()
+)
+
+// Usage — simply call ProduceAsync with the collection
+private async Task ProduceBatchSampleAsync(CancellationToken cancellationToken)
+{
+    await using var connection = new NpgsqlConnection(_connectionString);
+    await connection.OpenAsync(cancellationToken);
+
+    await using var transaction = await connection.BeginTransactionAsync(
+        IsolationLevel.ReadCommitted, cancellationToken);
+
+    var messages = new[]
+    {
+        new SampleTextModel("Message 1"),
+        new SampleTextModel("Message 2"),
+        new SampleTextModel("Message 3")
+    };
+
+    await _producer.ProduceAsync(
+        messages,
+        transaction,
+        cancellationToken);
+
+    await transaction.CommitAsync(cancellationToken);
+}
+```
+
+Each message runs through the configured pipeline (serialization, destination, key). The `ForEach` step runs the sub-pipeline for each item and collects the resulting produce contexts. The `SaveBatch` step persists all messages using a single storage operation when the storage supports it (e.g., PostgreSQL `NpgsqlBatch`).
+
 ### Consumers
 
 The purpose of consumers is to read messages from outbox storage and send them to the destination.

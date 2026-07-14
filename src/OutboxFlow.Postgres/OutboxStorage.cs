@@ -80,12 +80,9 @@ where id = any(@ids);";
     }
 
     /// <inheritdoc />
-    public async ValueTask SaveAsync(IProduceContext context, CancellationToken cancellationToken = default)
+    public async ValueTask SaveAsync(IProduceContext context)
     {
-        if (string.IsNullOrEmpty(context.Destination))
-            throw new InvalidOperationException("Destination must be defined.");
-
-        if (context.Value == null) throw new InvalidOperationException("Value must be defined.");
+        context.EnsureValid();
 
         var connection = EnsureConnection(context.Transaction);
 
@@ -98,9 +95,33 @@ where id = any(@ids);";
         command.Parameters.AddWithValue("value", context.Value);
         command.Parameters.AddWithValue("created_at", DateTime.UtcNow);
 
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-            context.CancellationToken, cancellationToken);
-        await command.ExecuteNonQueryAsync(linkedCts.Token).ConfigureAwait(false);
+        await command.ExecuteNonQueryAsync(context.CancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask SaveBatchAsync(
+        IReadOnlyCollection<IProduceContext> contexts)
+    {
+        if (contexts.Count == 0) return;
+
+        var connection = EnsureConnection(contexts.First().Transaction);
+
+        await using var batch = new NpgsqlBatch(connection);
+
+        foreach (var ctx in contexts)
+        {
+            ctx.EnsureValid();
+
+            var cmd = new NpgsqlBatchCommand(InsertCommandText);
+            cmd.Parameters.AddWithValue("destination", (object?) ctx.Destination ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("headers", (object?) SerializeHeaders(ctx.Headers) ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) ctx.Key ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("value", ctx.Value);
+            cmd.Parameters.AddWithValue("created_at", DateTime.UtcNow);
+            batch.BatchCommands.Add(cmd);
+        }
+
+        await batch.ExecuteNonQueryAsync(contexts.First().CancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

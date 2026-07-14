@@ -25,7 +25,7 @@ services.AddOutbox(outbox =>
 The producer builder is obtained inside the `AddProducer` callback.
 
 | Property / Method | Description |
-|---|---|
+|---|---|---|
 | `IOutboxStorageRegistrar? OutboxStorageRegistrar { get; set; }` | Storage registrar (set by `UsePostgres()` or a custom registrar). |
 | `ForMessage<T>(Action<IProducePipelineBuilder<T>> configure)` | Configures the produce pipeline for message type `T`. |
 | `Build(IServiceCollection services)` | Builds the producer and registers services. |
@@ -68,6 +68,14 @@ All methods in `ProducePipelineStepBuilderExtensions` (adds middleware, sets des
 | `SetKey<TIn, TOut>(Func<TOut, byte[]> keyProvider)` | `IProducePipelineStepBuilder<TOut, TOut>` | `keyProvider`: a function that extracts the message key from the message. | Sets the message key. |
 | `SetDestination<TIn, TOut>(string destination)` | `IProducePipelineStepBuilder<TOut, TOut>` | `destination`: the topic or queue name. | Sets the message destination. |
 | `Save<TIn, TOut>()` | `IProducePipelineStepBuilder<TOut, TOut>` | — | Saves the message to the outbox storage. Must be the **last step** in the producer pipeline. |
+
+### IProducer
+
+The `IProducer` interface is the entry point for producing outbox messages. Obtain it via DI after configuring the producer builder.
+
+| Method | Description |
+|---|---|
+| `ProduceAsync<T>(T message, IDbTransaction transaction, CancellationToken)` | Produces an outbox message. The configured pipeline (including `Save()` or `SaveBatch()`) runs synchronously within the provided transaction. For batch producing, pass `IReadOnlyCollection<TItem>` as `T` and configure the pipeline with `ForEach<TItem>()` + `SaveBatch()`. |
 
 ## Consumer Configuration
 

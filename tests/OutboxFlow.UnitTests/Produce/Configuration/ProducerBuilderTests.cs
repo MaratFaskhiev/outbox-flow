@@ -59,7 +59,7 @@ public sealed class ProducerBuilderTests : IDisposable
             Times.Once);
         _services.Verify(
             x => x.Add(It.Is<ServiceDescriptor>(d =>
-                d.ServiceType == typeof(IProducer) && d.ImplementationType == typeof(Producer))),
+                d.ServiceType == typeof(IProducer) && d.ImplementationFactory != null)),
             Times.Once);
     }
 

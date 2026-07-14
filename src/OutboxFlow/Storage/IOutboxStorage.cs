@@ -23,8 +23,13 @@ public interface IOutboxStorage
     /// Saves an outbox message to the storage.
     /// </summary>
     /// <param name="context">Produce context.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    ValueTask SaveAsync(IProduceContext context, CancellationToken cancellationToken = default);
+    ValueTask SaveAsync(IProduceContext context);
+
+    /// <summary>
+    /// Saves multiple outbox messages to the storage in a single operation.
+    /// </summary>
+    /// <param name="contexts">Produce contexts.</param>
+    ValueTask SaveBatchAsync(IReadOnlyCollection<IProduceContext> contexts);
 
     /// <summary>
     /// Deletes outbox messages from the storage.

@@ -172,6 +172,44 @@ public sealed class Worker : BackgroundService
 }
 ```
 
+For batch produce, pass a collection to `ProduceAsync` and configure the pipeline with `ForEach<TItem>()` + `SaveBatch()`:
+
+```csharp
+// Configuration
+.ForMessage<IReadOnlyCollection<MyMessage>>(pipeline =>
+    pipeline
+        .ForEach<MyMessage>(sub =>
+        {
+            sub.AddSyncStep((message, _) => new Protos.MyMessage
+            {
+                Value = message.Value
+            })
+            .SerializeWithProtobuf()
+            .SetDestination("my-topic");
+        })
+        .SaveBatch()
+)
+
+// Usage
+private async Task ProduceBatchAsync(CancellationToken stoppingToken)
+{
+    await using var connection = new NpgsqlConnection(
+        "Host=localhost;Database=outbox;Username=postgres;Password=postgres");
+    await connection.OpenAsync(stoppingToken);
+
+    await using var transaction = await connection.BeginTransactionAsync(
+        IsolationLevel.ReadCommitted, stoppingToken);
+
+    var messages = Enumerable.Range(0, 5).Select(i =>
+        new MyMessage($"Batch message #{i}")).ToArray();
+
+    await _producer.ProduceAsync(
+        messages, transaction, stoppingToken);
+
+    await transaction.CommitAsync(stoppingToken);
+}
+```
+
 ## 7. Run the Application
 
 ```shell

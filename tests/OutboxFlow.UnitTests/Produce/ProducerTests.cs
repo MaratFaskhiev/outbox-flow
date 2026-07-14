@@ -49,4 +49,30 @@ public sealed class ProducerTests : IDisposable
         context.ServiceProvider.Should().BeSameAs(_serviceProvider.Object);
         context.CancellationToken.IsCancellationRequested.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task ProduceAsync_CollectionType_CreatesContextAndRunsPipeline()
+    {
+        IReadOnlyCollection<string> messages = new[] {"a", "b"};
+
+        var collectionPipelineStep =
+            new Mock<IPipelineStep<IProduceContext, IReadOnlyCollection<string>>>(MockBehavior.Strict);
+
+        _registry.Setup(x => x.GetPipeline<IReadOnlyCollection<string>>())
+            .Returns(collectionPipelineStep.Object);
+
+        IProduceContext? context = null;
+        collectionPipelineStep.Setup(x => x.RunAsync(messages, It.IsAny<IProduceContext>()))
+            .Callback((IReadOnlyCollection<string> _, IProduceContext ctx) => { context = ctx; })
+            .Returns(new ValueTask());
+
+        await _producer.ProduceAsync(messages, _transaction.Object, CancellationToken.None);
+
+        context.Should().NotBeNull();
+        context!.Transaction.Should().BeSameAs(_transaction.Object);
+        context.ServiceProvider.Should().BeSameAs(_serviceProvider.Object);
+        context.CancellationToken.IsCancellationRequested.Should().BeFalse();
+
+        collectionPipelineStep.VerifyAll();
+    }
 }

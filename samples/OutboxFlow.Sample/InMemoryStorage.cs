@@ -20,7 +20,7 @@ internal sealed class InMemoryStorage : IOutboxStorage
         return new ValueTask<IReadOnlyCollection<IOutboxMessage>>(result.AsReadOnly());
     }
 
-    public ValueTask SaveAsync(IProduceContext context, CancellationToken cancellationToken = default)
+    public ValueTask SaveAsync(IProduceContext context)
     {
         var message = new InMemoryMessage(
             context.Destination!,
@@ -29,6 +29,23 @@ internal sealed class InMemoryStorage : IOutboxStorage
             context.Value!);
 
         _messages.Enqueue(message);
+
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask SaveBatchAsync(
+        IReadOnlyCollection<IProduceContext> contexts)
+    {
+        foreach (var context in contexts)
+        {
+            var message = new InMemoryMessage(
+                context.Destination!,
+                new Dictionary<string, string>(context.Headers),
+                context.Key,
+                context.Value!);
+
+            _messages.Enqueue(message);
+        }
 
         return ValueTask.CompletedTask;
     }

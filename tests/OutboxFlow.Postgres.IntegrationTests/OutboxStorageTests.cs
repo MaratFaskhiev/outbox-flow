@@ -211,4 +211,99 @@ public sealed class OutboxStorageTests : IAsyncLifetime
         var messages = await _storage.FetchAsync(3, transaction, CancellationToken.None);
         messages.Count.Should().Be(3);
     }
+
+    [Fact]
+    public async Task SaveBatchAsync_SavesAllMessages()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var transaction = await connection.BeginTransactionAsync();
+        _transactions.Add(transaction);
+
+        var contexts = new List<IProduceContext>
+        {
+            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            {
+                Destination = "batch-test", Value = [1]
+            },
+            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            {
+                Destination = "batch-test", Value = [2]
+            },
+            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            {
+                Destination = "batch-test", Value = [3]
+            }
+        };
+
+        await _storage.SaveBatchAsync(contexts);
+
+        var messages = await _storage.FetchAsync(100, transaction, CancellationToken.None);
+        messages.Count.Should().Be(3);
+        messages.Select(m => m.Value[0]).Should().BeEquivalentTo(new byte[] {1, 2, 3});
+    }
+
+    [Fact]
+    public async Task SaveBatchAsync_NullDestination_Throws()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var transaction = await connection.BeginTransactionAsync();
+        _transactions.Add(transaction);
+
+        var contexts = new List<IProduceContext>
+        {
+            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            {
+                Destination = "valid", Value = [1]
+            },
+            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            {
+                Destination = null, Value = [2]
+            }
+        };
+
+        var act = async () => await _storage.SaveBatchAsync(contexts);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Destination must be defined.");
+    }
+
+    [Fact]
+    public async Task SaveBatchAsync_NullValue_Throws()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var transaction = await connection.BeginTransactionAsync();
+        _transactions.Add(transaction);
+
+        var contexts = new List<IProduceContext>
+        {
+            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            {
+                Destination = "valid", Value = [1]
+            },
+            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            {
+                Destination = "valid", Value = null
+            }
+        };
+
+        var act = async () => await _storage.SaveBatchAsync(contexts);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Value must be defined.");
+    }
+
+    [Fact]
+    public async Task SaveBatchAsync_EmptyBatch_DoesNotThrow()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var transaction = await connection.BeginTransactionAsync();
+        _transactions.Add(transaction);
+
+        var act = async () => await _storage.SaveBatchAsync(
+            Array.Empty<IProduceContext>());
+
+        await act.Should().NotThrowAsync();
+    }
 }

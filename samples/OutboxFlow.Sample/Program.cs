@@ -83,6 +83,27 @@ public static class Program
                                 // Save the message to a storage
                                 .Save()
                         )
+                        // Configure pipeline for batch message processing
+                        .ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
+                            pipeline
+                                .ForEach<SampleTextModel>(sub =>
+                                {
+                                    sub.AddSyncStep<LoggingMiddleware, SampleTextModel>()
+                                        .AddSyncStep((message, _) => new Protos.SampleTextModel
+                                        {
+                                            Value = message.Value
+                                        })
+                                        .SerializeWithProtobuf()
+                                        .AddSyncStep((message, context) =>
+                                        {
+                                            context.Headers.Add("timestamp",
+                                                DateTime.UtcNow.ToString("O"));
+                                            return message;
+                                        })
+                                        .SetDestination("topic");
+                                })
+                                .SaveBatch()
+                        )
                     )
                     // Register the consumer dependencies
                     .AddConsumer(consumer =>

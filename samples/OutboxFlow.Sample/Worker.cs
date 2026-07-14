@@ -48,4 +48,23 @@ public sealed class Worker : BackgroundService
             await Task.Delay(10000, stoppingToken);
         }
     }
+
+    // ReSharper disable once UnusedMember.Glocal
+    // ReSharper disable once UnusedMember.Local
+    private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync(stoppingToken);
+
+        await using var transaction = await connection.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted, stoppingToken);
+
+        IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
+            new SampleTextModel($"Batch message #{i}")).ToArray();
+
+        await _producer.ProduceAsync(
+            messages, transaction, stoppingToken);
+
+        await transaction.CommitAsync(stoppingToken);
+    }
 }

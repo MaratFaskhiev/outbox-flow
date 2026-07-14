@@ -12,13 +12,18 @@ public sealed class ProduceContext : IProduceContext
     /// <param name="serviceProvider">Service provider.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public ProduceContext(
-        IDbTransaction transaction, IServiceProvider serviceProvider, CancellationToken cancellationToken)
+        IDbTransaction transaction,
+        IServiceProvider serviceProvider,
+        CancellationToken cancellationToken,
+        IDictionary<string, string>? headers = null)
     {
         Transaction = transaction;
         ServiceProvider = serviceProvider;
         CancellationToken = cancellationToken;
 
-        Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Headers = headers != null
+            ? new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <inheritdoc />
