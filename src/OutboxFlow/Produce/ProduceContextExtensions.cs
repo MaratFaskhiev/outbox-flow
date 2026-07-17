@@ -1,5 +1,3 @@
-using System.Data;
-
 namespace OutboxFlow.Produce;
 
 internal static class ProduceContextExtensions

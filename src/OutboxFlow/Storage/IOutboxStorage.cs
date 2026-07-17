@@ -1,4 +1,3 @@
-﻿using System.Data;
 using OutboxFlow.Produce;
 
 namespace OutboxFlow.Storage;
@@ -12,11 +11,9 @@ public interface IOutboxStorage
     /// Fetches outbox messages from the storage.
     /// </summary>
     /// <param name="batchSize">Amount of messages to fetch.</param>
-    /// <param name="transaction">Transaction.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     ValueTask<IReadOnlyCollection<IOutboxMessage>> FetchAsync(
         int batchSize,
-        IDbTransaction transaction,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -35,10 +32,8 @@ public interface IOutboxStorage
     /// Deletes outbox messages from the storage.
     /// </summary>
     /// <param name="outboxMessages">Outbox messages.</param>
-    /// <param name="transaction">Transaction.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     ValueTask DeleteAsync(
         IReadOnlyCollection<IOutboxMessage> outboxMessages,
-        IDbTransaction transaction,
         CancellationToken cancellationToken = default);
 }

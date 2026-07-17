@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Transactions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OutboxFlow.Storage;
 using OutboxFlow.Storage.Configuration;
@@ -8,7 +9,6 @@ namespace OutboxFlow.Consume;
 /// <inheritdoc />
 public sealed class OutboxConsumer : IOutboxConsumer
 {
-    private readonly IDbConnectionFactory _connectionFactory;
     private readonly ILogger<OutboxConsumer> _logger;
     private readonly IOptionsMonitor<OutboxStorageConsumerOptions> _options;
     private readonly IOutboxLockManager _outboxLockManager;
@@ -19,7 +19,6 @@ public sealed class OutboxConsumer : IOutboxConsumer
     /// <summary>
     /// Ctor.
     /// </summary>
-    /// <param name="connectionFactory">Database connection factory.</param>
     /// <param name="outboxStorage">Outbox storage.</param>
     /// <param name="outboxLockManager">Outbox state storage.</param>
     /// <param name="registry">Consume pipeline registry.</param>
@@ -27,7 +26,6 @@ public sealed class OutboxConsumer : IOutboxConsumer
     /// <param name="options">Configuration options.</param>
     /// <param name="logger">Logger.</param>
     public OutboxConsumer(
-        IDbConnectionFactory connectionFactory,
         IOutboxStorage outboxStorage,
         IOutboxLockManager outboxLockManager,
         IConsumePipelineRegistry registry,
@@ -35,7 +33,6 @@ public sealed class OutboxConsumer : IOutboxConsumer
         IOptionsMonitor<OutboxStorageConsumerOptions> options,
         ILogger<OutboxConsumer> logger)
     {
-        _connectionFactory = connectionFactory;
         _outboxStorage = outboxStorage;
         _outboxLockManager = outboxLockManager;
         _registry = registry;
@@ -51,24 +48,21 @@ public sealed class OutboxConsumer : IOutboxConsumer
         using var combinedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken, timeoutTokenSource.Token);
 
-        using var connection = _connectionFactory.Create();
-        connection.Open();
-
         IOutboxLock? outboxLock;
         IReadOnlyCollection<IOutboxMessage> messages;
-        using (var transaction = connection.BeginTransaction(_options.CurrentValue.IsolationLevel))
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
             outboxLock = await _outboxLockManager
-                .LockAsync(_options.CurrentValue.Timeout, transaction, combinedTokenSource.Token)
+                .LockAsync(_options.CurrentValue.Timeout, combinedTokenSource.Token)
                 .ConfigureAwait(false);
 
             if (outboxLock == null) return new OutboxConsumeResult(false);
 
             messages = await _outboxStorage
-                .FetchAsync(_options.CurrentValue.BatchSize, transaction, combinedTokenSource.Token)
+                .FetchAsync(_options.CurrentValue.BatchSize, combinedTokenSource.Token)
                 .ConfigureAwait(false);
 
-            transaction.Commit();
+            scope.Complete();
         }
 
         _logger.LogDebug("Fetched {Count} messages.", messages.Count);
@@ -87,17 +81,17 @@ public sealed class OutboxConsumer : IOutboxConsumer
 
         _logger.LogDebug("Delivered {Count} messages.", messages.Count);
 
-        using (var transaction = connection.BeginTransaction(_options.CurrentValue.IsolationLevel))
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
             await _outboxStorage
-                .DeleteAsync(messages, transaction, combinedTokenSource.Token
+                .DeleteAsync(messages, combinedTokenSource.Token
                 ).ConfigureAwait(false);
 
             await _outboxLockManager
-                .ReleaseAsync(outboxLock, transaction, combinedTokenSource.Token)
+                .ReleaseAsync(outboxLock, combinedTokenSource.Token)
                 .ConfigureAwait(false);
 
-            transaction.Commit();
+            scope.Complete();
         }
 
         _logger.LogDebug("Deleted {Count} messages.", messages.Count);

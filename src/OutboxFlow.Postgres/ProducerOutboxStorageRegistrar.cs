@@ -10,6 +10,17 @@ namespace OutboxFlow.Postgres;
 /// </summary>
 public sealed class ProducerOutboxStorageRegistrar : IOutboxStorageRegistrar
 {
+    private readonly string _connectionString;
+
+    /// <summary>
+    /// Ctor.
+    /// </summary>
+    /// <param name="connectionString">Database connection string.</param>
+    public ProducerOutboxStorageRegistrar(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
+
     /// <summary>
     /// Registers an outbox storage based on PostgreSQL.
     /// </summary>
@@ -17,5 +28,6 @@ public sealed class ProducerOutboxStorageRegistrar : IOutboxStorageRegistrar
     public void Register(IServiceCollection services)
     {
         services.TryAddScoped<IOutboxStorage, OutboxStorage>();
+        services.TryAddSingleton<IDbConnectionFactory>(new DefaultDbConnectionFactory(_connectionString));
     }
 }

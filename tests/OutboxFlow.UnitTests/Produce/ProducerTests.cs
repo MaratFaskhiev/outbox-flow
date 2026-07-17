@@ -1,5 +1,4 @@
-﻿using System.Data;
-using FluentAssertions;
+﻿using FluentAssertions;
 using Moq;
 using OutboxFlow.Produce;
 using Xunit;
@@ -13,21 +12,19 @@ public sealed class ProducerTests : IDisposable
     private readonly Producer _producer;
     private readonly Mock<IProducePipelineRegistry> _registry;
     private readonly Mock<IServiceProvider> _serviceProvider;
-    private readonly Mock<IDbTransaction> _transaction;
 
     public ProducerTests()
     {
         _registry = new Mock<IProducePipelineRegistry>(MockBehavior.Strict);
         _serviceProvider = new Mock<IServiceProvider>(MockBehavior.Strict);
         _pipelineStep = new Mock<IPipelineStep<IProduceContext, string>>(MockBehavior.Strict);
-        _transaction = new Mock<IDbTransaction>(MockBehavior.Strict);
 
         _producer = new Producer(_registry.Object, _serviceProvider.Object);
     }
 
     public void Dispose()
     {
-        Mock.VerifyAll(_registry, _serviceProvider, _pipelineStep, _transaction);
+        Mock.VerifyAll(_registry, _serviceProvider, _pipelineStep);
     }
 
     [Fact]
@@ -42,11 +39,10 @@ public sealed class ProducerTests : IDisposable
             .Callback((string _, IProduceContext ctx) => { context = ctx; })
             .Returns(new ValueTask());
 
-        await _producer.ProduceAsync(message, _transaction.Object, CancellationToken.None);
+        await _producer.ProduceAsync(message, CancellationToken.None);
 
         context.Should().NotBeNull();
-        context!.Transaction.Should().BeSameAs(_transaction.Object);
-        context.ServiceProvider.Should().BeSameAs(_serviceProvider.Object);
+        context!.ServiceProvider.Should().BeSameAs(_serviceProvider.Object);
         context.CancellationToken.IsCancellationRequested.Should().BeFalse();
     }
 
@@ -66,11 +62,10 @@ public sealed class ProducerTests : IDisposable
             .Callback((IReadOnlyCollection<string> _, IProduceContext ctx) => { context = ctx; })
             .Returns(new ValueTask());
 
-        await _producer.ProduceAsync(messages, _transaction.Object, CancellationToken.None);
+        await _producer.ProduceAsync(messages, CancellationToken.None);
 
         context.Should().NotBeNull();
-        context!.Transaction.Should().BeSameAs(_transaction.Object);
-        context.ServiceProvider.Should().BeSameAs(_serviceProvider.Object);
+        context!.ServiceProvider.Should().BeSameAs(_serviceProvider.Object);
         context.CancellationToken.IsCancellationRequested.Should().BeFalse();
 
         collectionPipelineStep.VerifyAll();

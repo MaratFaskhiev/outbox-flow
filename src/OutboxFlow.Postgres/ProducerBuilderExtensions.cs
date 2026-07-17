@@ -1,4 +1,4 @@
-﻿using OutboxFlow.Produce.Configuration;
+using OutboxFlow.Produce.Configuration;
 
 namespace OutboxFlow.Postgres;
 
@@ -11,9 +11,10 @@ public static class ProducerBuilderExtensions
     /// Configures the producer to use an outbox storage based on PostgreSQL.
     /// </summary>
     /// <param name="builder">Outbox producer builder.</param>
-    public static IProducerBuilder UsePostgres(this IProducerBuilder builder)
+    /// <param name="connectionString">Database connection string.</param>
+    public static IProducerBuilder UsePostgres(this IProducerBuilder builder, string connectionString)
     {
-        builder.OutboxStorageRegistrar = new ProducerOutboxStorageRegistrar();
+        builder.OutboxStorageRegistrar = new ProducerOutboxStorageRegistrar(connectionString);
 
         return builder;
     }

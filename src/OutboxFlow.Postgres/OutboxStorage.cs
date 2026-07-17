@@ -25,16 +25,26 @@ values (@destination, @headers::jsonb, @key, @value, @created_at);";
 delete from outbox_message
 where id = any(@ids);";
 
+    private readonly IDbConnectionFactory _connectionFactory;
+
+    /// <summary>
+    /// Ctor.
+    /// </summary>
+    /// <param name="connectionFactory">Database connection factory.</param>
+    public OutboxStorage(IDbConnectionFactory connectionFactory)
+    {
+        _connectionFactory = connectionFactory;
+    }
+
     /// <inheritdoc />
     public async ValueTask<IReadOnlyCollection<IOutboxMessage>> FetchAsync(
         int batchSize,
-        IDbTransaction transaction,
         CancellationToken cancellationToken = default)
     {
         if (batchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size should be greater than zero.");
 
-        var connection = EnsureConnection(transaction);
+        await using var connection = await GetConnectionAsync(cancellationToken);
 
         using var command = connection.CreateCommand();
         command.CommandText = FetchCommandText;
@@ -84,7 +94,7 @@ where id = any(@ids);";
     {
         context.EnsureValid();
 
-        var connection = EnsureConnection(context.Transaction);
+        await using var connection = await GetConnectionAsync(context.CancellationToken);
 
         using var command = connection.CreateCommand();
         command.CommandText = InsertCommandText;
@@ -104,7 +114,7 @@ where id = any(@ids);";
     {
         if (contexts.Count == 0) return;
 
-        var connection = EnsureConnection(contexts.First().Transaction);
+        await using var connection = await GetConnectionAsync(contexts.First().CancellationToken);
 
         await using var batch = new NpgsqlBatch(connection);
 
@@ -125,10 +135,10 @@ where id = any(@ids);";
     }
 
     /// <inheritdoc />
-    public async ValueTask DeleteAsync(IReadOnlyCollection<IOutboxMessage> outboxMessages, IDbTransaction transaction,
+    public async ValueTask DeleteAsync(IReadOnlyCollection<IOutboxMessage> outboxMessages,
         CancellationToken cancellationToken = default)
     {
-        var connection = EnsureConnection(transaction);
+        await using var connection = await GetConnectionAsync(cancellationToken);
 
         if (outboxMessages.Any(x => x is not OutboxMessage))
             throw new InvalidOperationException($"{typeof(OutboxMessage).FullName} expected.");
@@ -141,11 +151,10 @@ where id = any(@ids);";
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static NpgsqlConnection EnsureConnection(IDbTransaction transaction)
+    private async ValueTask<NpgsqlConnection> GetConnectionAsync(CancellationToken ct)
     {
-        var connection = transaction.Connection as NpgsqlConnection;
-        if (connection == null)
-            throw new InvalidOperationException("Connection must be defined.");
+        var connection = (NpgsqlConnection) _connectionFactory.Create();
+        await connection.OpenAsync(ct);
         return connection;
     }
 

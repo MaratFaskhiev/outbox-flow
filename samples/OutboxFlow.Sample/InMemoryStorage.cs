@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Data;
 using OutboxFlow.Produce;
 using OutboxFlow.Storage;
 
@@ -11,7 +10,6 @@ internal sealed class InMemoryStorage : IOutboxStorage
 
     public ValueTask<IReadOnlyCollection<IOutboxMessage>> FetchAsync(
         int batchSize,
-        IDbTransaction transaction,
         CancellationToken cancellationToken = default)
     {
         var result = new List<IOutboxMessage>(batchSize);
@@ -52,7 +50,6 @@ internal sealed class InMemoryStorage : IOutboxStorage
 
     public ValueTask DeleteAsync(
         IReadOnlyCollection<IOutboxMessage> outboxMessages,
-        IDbTransaction transaction,
         CancellationToken cancellationToken = default)
     {
         return ValueTask.CompletedTask;

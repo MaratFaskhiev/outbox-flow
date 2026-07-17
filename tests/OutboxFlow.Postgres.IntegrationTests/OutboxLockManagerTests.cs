@@ -1,5 +1,6 @@
-﻿using FluentAssertions;
-using Npgsql;
+﻿using System.Transactions;
+using FluentAssertions;
+using OutboxFlow.Storage;
 using Xunit;
 
 namespace OutboxFlow.Postgres.IntegrationTests;
@@ -9,122 +10,114 @@ namespace OutboxFlow.Postgres.IntegrationTests;
 public sealed class OutboxLockManagerTests
 {
     private readonly string _connectionString;
-
-    private readonly OutboxLockManager _manager = new();
+    private readonly OutboxLockManager _manager;
 
     public OutboxLockManagerTests(DatabaseFixture databaseFixture)
     {
         _connectionString = databaseFixture.ConnectionString;
+        _manager = new OutboxLockManager(new DefaultDbConnectionFactory(_connectionString));
     }
 
     [Fact]
     public async Task LockWorkflowTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            var outboxLock1 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
+            outboxLock1.Should().NotBeNull();
 
-        var outboxLock1 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
+            var outboxLock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
+            outboxLock2.Should().BeNull();
 
-        outboxLock1.Should().NotBeNull();
+            await _manager.ReleaseAsync(outboxLock1, CancellationToken.None);
+            scope.Complete();
+        }
 
-        var outboxLock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
-
-        outboxLock2.Should().BeNull();
-
-        await _manager.ReleaseAsync(outboxLock1, transaction, CancellationToken.None);
-
-        var outboxLock3 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
-
-        outboxLock3.Should().NotBeNull();
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            var outboxLock3 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
+            outboxLock3.Should().NotBeNull();
+            scope.Complete();
+        }
     }
 
     [Fact]
     public async Task ConcurrentLockFromTwoConnectionsTest()
     {
-        await using var connection1 = new NpgsqlConnection(_connectionString);
-        await connection1.OpenAsync();
-        await using var transaction1 = await connection1.BeginTransactionAsync();
+        IOutboxLock? lock1;
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            lock1 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
+            lock1.Should().NotBeNull();
+            scope.Complete();
+        }
 
-        var lock1 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction1, CancellationToken.None);
-        lock1.Should().NotBeNull();
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            var lock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
+            lock2.Should().BeNull();
+            scope.Complete();
+        }
 
-        await using var connection2 = new NpgsqlConnection(_connectionString);
-        await connection2.OpenAsync();
-        var transaction2 = await connection2.BeginTransactionAsync();
-
-        var lock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction2, CancellationToken.None);
-        lock2.Should().BeNull();
-
-        // transaction2 is aborted after the LOCK TABLE failure; rollback before creating a new one
-        await transaction2.RollbackAsync();
-        await transaction2.DisposeAsync();
-
-        await _manager.ReleaseAsync(lock1, transaction1, CancellationToken.None);
-        await transaction1.CommitAsync();
-
-        await using var transaction3 = await connection2.BeginTransactionAsync();
-        var lock3 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction3, CancellationToken.None);
-        lock3.Should().NotBeNull();
-
-        await _manager.ReleaseAsync(lock3, transaction3, CancellationToken.None);
-        await transaction3.CommitAsync();
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            await _manager.ReleaseAsync(lock1, CancellationToken.None);
+            var lock3 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
+            lock3.Should().NotBeNull();
+            await _manager.ReleaseAsync(lock3, CancellationToken.None);
+            scope.Complete();
+        }
     }
 
     [Fact]
     public async Task LockExpirationTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-
-        await using var transaction1 = await connection.BeginTransactionAsync();
-        var lock1 = await _manager.LockAsync(TimeSpan.FromSeconds(1), transaction1, CancellationToken.None);
-        lock1.Should().NotBeNull();
-        await _manager.ReleaseAsync(lock1, transaction1, CancellationToken.None);
-        await transaction1.CommitAsync();
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            var lock1 = await _manager.LockAsync(TimeSpan.FromSeconds(1), CancellationToken.None);
+            lock1.Should().NotBeNull();
+            await _manager.ReleaseAsync(lock1, CancellationToken.None);
+            scope.Complete();
+        }
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        await using var transaction2 = await connection.BeginTransactionAsync();
-        var lock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction2, CancellationToken.None);
-        lock2.Should().NotBeNull();
-        await _manager.ReleaseAsync(lock2, transaction2, CancellationToken.None);
-        await transaction2.CommitAsync();
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            var lock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
+            lock2.Should().NotBeNull();
+            await _manager.ReleaseAsync(lock2, CancellationToken.None);
+            scope.Complete();
+        }
     }
 
     [Fact]
     public async Task CancellationTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
-
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
         Func<Task> act = async () => await _manager.LockAsync(
-            TimeSpan.FromMinutes(5), transaction, cts.Token);
+            TimeSpan.FromMinutes(5), cts.Token);
 
         await act.Should().ThrowAsync<OperationCanceledException>();
-
-        await transaction.RollbackAsync();
     }
 
     [Fact]
     public async Task DoubleReleaseTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
+        IOutboxLock? outboxLock;
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            outboxLock = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
+            outboxLock.Should().NotBeNull();
 
-        var outboxLock = await _manager.LockAsync(TimeSpan.FromMinutes(5), transaction, CancellationToken.None);
-        outboxLock.Should().NotBeNull();
+            await _manager.ReleaseAsync(outboxLock, CancellationToken.None);
 
-        await _manager.ReleaseAsync(outboxLock, transaction, CancellationToken.None);
+            var act = async () => await _manager.ReleaseAsync(outboxLock, CancellationToken.None);
+            await act.Should().NotThrowAsync();
 
-        var act = async () => await _manager.ReleaseAsync(outboxLock, transaction, CancellationToken.None);
-        await act.Should().NotThrowAsync();
-
-        await transaction.CommitAsync();
+            scope.Complete();
+        }
     }
 }

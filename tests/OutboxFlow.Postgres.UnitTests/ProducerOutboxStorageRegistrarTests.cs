@@ -7,7 +7,7 @@ namespace OutboxFlow.Postgres.UnitTests;
 
 public sealed class ProducerOutboxStorageRegistrarTests : IDisposable
 {
-    private readonly ProducerOutboxStorageRegistrar _registrar = new();
+    private readonly ProducerOutboxStorageRegistrar _registrar = new("connectionString");
     private readonly Mock<IServiceCollection> _services = new(MockBehavior.Strict);
 
     public void Dispose()

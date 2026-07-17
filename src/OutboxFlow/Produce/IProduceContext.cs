@@ -1,5 +1,3 @@
-﻿using System.Data;
-
 namespace OutboxFlow.Produce;
 
 /// <summary>
@@ -11,11 +9,6 @@ public interface IProduceContext
     /// Gets or sets the destination.
     /// </summary>
     public string? Destination { get; set; }
-
-    /// <summary>
-    /// Gets the transaction.
-    /// </summary>
-    public IDbTransaction Transaction { get; }
 
     /// <summary>
     /// Gets the service provider.

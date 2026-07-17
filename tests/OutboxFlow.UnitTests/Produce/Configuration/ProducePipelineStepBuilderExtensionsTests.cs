@@ -1,5 +1,4 @@
-﻿using System.Data;
-using FluentAssertions;
+﻿using FluentAssertions;
 using Moq;
 using OutboxFlow.Produce;
 using OutboxFlow.Produce.Configuration;
@@ -330,10 +329,8 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
                     IReadOnlyCollection<string>, IReadOnlyCollection<IProduceContext>>>();
             });
 
-        var transaction = new Mock<IDbTransaction>(MockBehavior.Strict);
         var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Strict);
         var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
-        outerContext.Setup(x => x.Transaction).Returns(transaction.Object);
         outerContext.Setup(x => x.ServiceProvider).Returns(serviceProvider.Object);
         outerContext.Setup(x => x.CancellationToken).Returns(CancellationToken.None);
         outerContext.Setup(x => x.Headers).Returns(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
@@ -354,7 +351,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
         result.ElementAt(1).Key.Should().BeEquivalentTo(itemKeys["b"]);
         result.ElementAt(2).Key.Should().BeEquivalentTo(itemKeys["c"]);
 
-        Mock.VerifyAll(forEachBuilder, transaction, serviceProvider, outerContext);
+        Mock.VerifyAll(forEachBuilder, serviceProvider, outerContext);
     }
 
     [Fact]
@@ -384,13 +381,11 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
         outboxStorage.Setup(x => x.SaveAsync(It.IsAny<IProduceContext>()))
             .Returns(new ValueTask());
 
-        var transaction = new Mock<IDbTransaction>(MockBehavior.Strict);
         var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Strict);
         serviceProvider.Setup(x => x.GetService(typeof(IOutboxStorage)))
             .Returns(outboxStorage.Object);
 
         var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
-        outerContext.Setup(x => x.Transaction).Returns(transaction.Object);
         outerContext.Setup(x => x.ServiceProvider).Returns(serviceProvider.Object);
         outerContext.Setup(x => x.CancellationToken).Returns(CancellationToken.None);
         outerContext.Setup(x => x.Headers).Returns(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
@@ -409,7 +404,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
         result.Should().HaveCount(2);
         outboxStorage.Verify(x => x.SaveAsync(It.IsAny<IProduceContext>()), Times.Exactly(2));
 
-        Mock.VerifyAll(forEachBuilder, outboxStorage, transaction, serviceProvider, outerContext);
+        Mock.VerifyAll(forEachBuilder, outboxStorage, serviceProvider, outerContext);
     }
 
     [Fact]
@@ -469,10 +464,8 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
                     IReadOnlyCollection<string>, IReadOnlyCollection<IProduceContext>>>();
             });
 
-        var transaction = new Mock<IDbTransaction>(MockBehavior.Strict);
         var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Strict);
         var outerContext = new Mock<IProduceContext>(MockBehavior.Strict);
-        outerContext.Setup(x => x.Transaction).Returns(transaction.Object);
         outerContext.Setup(x => x.ServiceProvider).Returns(serviceProvider.Object);
         outerContext.Setup(x => x.CancellationToken).Returns(CancellationToken.None);
         outerContext.Setup(x => x.Headers).Returns(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
@@ -490,7 +483,7 @@ public sealed class ProducePipelineStepBuilderExtensionsTests : IDisposable
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("test error");
 
-        Mock.VerifyAll(forEachBuilder, transaction, serviceProvider, outerContext);
+        Mock.VerifyAll(forEachBuilder, serviceProvider, outerContext);
     }
 
     [Fact]

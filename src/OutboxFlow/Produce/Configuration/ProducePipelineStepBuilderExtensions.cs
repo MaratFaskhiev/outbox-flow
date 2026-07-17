@@ -180,7 +180,6 @@ public static class ProducePipelineStepBuilderExtensions
             foreach (var item in collection)
             {
                 var subContext = new ProduceContext(
-                    context.Transaction,
                     context.ServiceProvider,
                     context.CancellationToken,
                     context.Headers);

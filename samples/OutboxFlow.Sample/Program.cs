@@ -59,7 +59,7 @@ public static class Program
                     // Register the producer dependencies
                     .AddProducer(producer => producer
                         // Use PostgreSQL as an underlying storage
-                        .UsePostgres()
+                        .UsePostgres(hostBuilderContext.Configuration.GetConnectionString("Postgres")!)
                         // Configure pipeline for the SampleTextModel message type
                         .ForMessage<SampleTextModel>(pipeline =>
                             pipeline
@@ -86,7 +86,7 @@ public static class Program
                         // Configure pipeline for batch message processing
                         .ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
                             pipeline
-                                .ForEach<SampleTextModel>(sub =>
+                                .ForEach(sub =>
                                 {
                                     sub.AddSyncStep<LoggingMiddleware, SampleTextModel>()
                                         .AddSyncStep((message, _) => new Protos.SampleTextModel

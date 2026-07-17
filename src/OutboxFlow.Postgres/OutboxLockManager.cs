@@ -27,11 +27,22 @@ delete from outbox_state
 where expire_at < clock_timestamp() or id = @id;
 ";
 
+    private readonly IDbConnectionFactory _connectionFactory;
+
+    /// <summary>
+    /// Ctor.
+    /// </summary>
+    /// <param name="connectionFactory">Database connection factory.</param>
+    public OutboxLockManager(IDbConnectionFactory connectionFactory)
+    {
+        _connectionFactory = connectionFactory;
+    }
+
     /// <inheritdoc />
     public async ValueTask<IOutboxLock?> LockAsync(
-        TimeSpan lockTimeout, IDbTransaction transaction, CancellationToken cancellationToken = default)
+        TimeSpan lockTimeout, CancellationToken cancellationToken = default)
     {
-        var connection = EnsureConnection(transaction);
+        await using var connection = await GetConnectionAsync(cancellationToken);
 
         using var checkCommand = connection.CreateCommand();
         checkCommand.CommandText = CheckLockCommandText;
@@ -60,10 +71,10 @@ where expire_at < clock_timestamp() or id = @id;
     }
 
     /// <inheritdoc />
-    public async ValueTask ReleaseAsync(IOutboxLock outboxLock, IDbTransaction transaction,
+    public async ValueTask ReleaseAsync(IOutboxLock outboxLock,
         CancellationToken cancellationToken = default)
     {
-        var connection = EnsureConnection(transaction);
+        await using var connection = await GetConnectionAsync(cancellationToken);
 
         using var command = connection.CreateCommand();
         command.CommandText = ReleaseCommandText;
@@ -72,11 +83,10 @@ where expire_at < clock_timestamp() or id = @id;
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static NpgsqlConnection EnsureConnection(IDbTransaction transaction)
+    private async ValueTask<NpgsqlConnection> GetConnectionAsync(CancellationToken ct)
     {
-        var connection = transaction.Connection as NpgsqlConnection;
-        if (connection == null)
-            throw new InvalidOperationException("Connection must be defined.");
+        var connection = (NpgsqlConnection) _connectionFactory.Create();
+        await connection.OpenAsync(ct);
         return connection;
     }
 }

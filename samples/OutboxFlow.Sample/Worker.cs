@@ -1,8 +1,7 @@
-﻿using System.Data;
+﻿using System.Transactions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Npgsql;
 using OutboxFlow.Produce;
 using OutboxFlow.Sample.Models;
 
@@ -10,7 +9,6 @@ namespace OutboxFlow.Sample;
 
 public sealed class Worker : BackgroundService
 {
-    private readonly string _connectionString;
     private readonly ILogger<Worker> _logger;
     private readonly IProducer _producer;
 
@@ -18,7 +16,6 @@ public sealed class Worker : BackgroundService
     {
         _producer = producer;
         _logger = logger;
-        _connectionString = configuration.GetConnectionString("Postgres")!;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -30,19 +27,13 @@ public sealed class Worker : BackgroundService
         {
             messageId++;
 
-            await using (var connection = new NpgsqlConnection(_connectionString))
+            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
-                await connection.OpenAsync(stoppingToken);
-
-                await using var transaction = await connection.BeginTransactionAsync(
-                    IsolationLevel.ReadCommitted, stoppingToken);
-
                 await _producer.ProduceAsync(
                     new SampleTextModel($"Message #{messageId}"),
-                    transaction,
                     stoppingToken);
 
-                await transaction.CommitAsync(stoppingToken);
+                scope.Complete();
             }
 
             await Task.Delay(10000, stoppingToken);
@@ -53,18 +44,15 @@ public sealed class Worker : BackgroundService
     // ReSharper disable once UnusedMember.Local
     private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync(stoppingToken);
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
+                new SampleTextModel($"Batch message #{i}")).ToArray();
 
-        await using var transaction = await connection.BeginTransactionAsync(
-            IsolationLevel.ReadCommitted, stoppingToken);
+            await _producer.ProduceAsync(
+                messages, stoppingToken);
 
-        IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
-            new SampleTextModel($"Batch message #{i}")).ToArray();
-
-        await _producer.ProduceAsync(
-            messages, transaction, stoppingToken);
-
-        await transaction.CommitAsync(stoppingToken);
+            scope.Complete();
+        }
     }
 }

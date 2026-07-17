@@ -1,5 +1,3 @@
-using System.Data;
-
 namespace OutboxFlow.Produce;
 
 /// <inheritdoc />
@@ -20,11 +18,11 @@ public sealed class Producer : IProducer
     }
 
     /// <inheritdoc />
-    public async ValueTask ProduceAsync<T>(T message, IDbTransaction transaction, CancellationToken cancellationToken)
+    public async ValueTask ProduceAsync<T>(T message, CancellationToken cancellationToken)
     {
         var pipeline = _registry.GetPipeline<T>();
 
-        var context = new ProduceContext(transaction, _serviceProvider, cancellationToken);
+        var context = new ProduceContext(_serviceProvider, cancellationToken);
         await pipeline.RunAsync(message, context).ConfigureAwait(false);
     }
 }

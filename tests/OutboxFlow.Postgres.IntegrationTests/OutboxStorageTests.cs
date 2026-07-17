@@ -1,3 +1,4 @@
+using System.Transactions;
 using FluentAssertions;
 using Moq;
 using Npgsql;
@@ -12,14 +13,12 @@ namespace OutboxFlow.Postgres.IntegrationTests;
 public sealed class OutboxStorageTests : IAsyncLifetime
 {
     private readonly string _connectionString;
-
-    private readonly OutboxStorage _storage = new();
-
-    private readonly List<NpgsqlTransaction> _transactions = [];
+    private readonly OutboxStorage _storage;
 
     public OutboxStorageTests(DatabaseFixture databaseFixture)
     {
         _connectionString = databaseFixture.ConnectionString;
+        _storage = new OutboxStorage(new DefaultDbConnectionFactory(_connectionString));
     }
 
     public Task InitializeAsync()
@@ -27,9 +26,9 @@ public sealed class OutboxStorageTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
-        foreach (var transaction in _transactions) await transaction.DisposeAsync();
+        return Task.CompletedTask;
     }
 
     [Fact]
@@ -37,10 +36,9 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     {
         await using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
+        await using var transaction = await connection.BeginTransactionAsync();
 
-        var produceContext = new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+        var produceContext = new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
         {
             Destination = "destination",
             Headers =
@@ -52,7 +50,7 @@ public sealed class OutboxStorageTests : IAsyncLifetime
         };
         await _storage.SaveAsync(produceContext);
 
-        var messages = await _storage.FetchAsync(100, transaction, CancellationToken.None);
+        var messages = await _storage.FetchAsync(100, CancellationToken.None);
 
         messages.Count.Should().Be(1);
 
@@ -67,9 +65,9 @@ public sealed class OutboxStorageTests : IAsyncLifetime
         message.Key.Should().BeEquivalentTo(produceContext.Key);
         message.Value.Should().BeEquivalentTo(produceContext.Value);
 
-        await _storage.DeleteAsync(messages, transaction, CancellationToken.None);
+        await _storage.DeleteAsync(messages, CancellationToken.None);
 
-        messages = await _storage.FetchAsync(100, transaction, CancellationToken.None);
+        messages = await _storage.FetchAsync(100, CancellationToken.None);
 
         messages.Should().BeEmpty();
     }
@@ -77,12 +75,7 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task SaveWithNullDestinationThrowsTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
-        var context = new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+        var context = new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
         {
             Destination = null,
             Value = [1, 2, 3]
@@ -96,12 +89,7 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task SaveWithEmptyDestinationThrowsTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
-        var context = new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+        var context = new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
         {
             Destination = string.Empty,
             Value = [1, 2, 3]
@@ -115,12 +103,7 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task SaveWithNullValueThrowsTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
-        var context = new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+        var context = new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
         {
             Destination = "test-destination",
             Value = null
@@ -134,16 +117,11 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task FetchWithNonPositiveBatchSizeThrowsTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
-        Func<Task> actZero = async () => await _storage.FetchAsync(0, transaction);
+        Func<Task> actZero = async () => await _storage.FetchAsync(0);
         await actZero.Should().ThrowAsync<ArgumentOutOfRangeException>()
             .WithParameterName("batchSize");
 
-        Func<Task> actNegative = async () => await _storage.FetchAsync(-1, transaction);
+        Func<Task> actNegative = async () => await _storage.FetchAsync(-1);
         await actNegative.Should().ThrowAsync<ArgumentOutOfRangeException>()
             .WithParameterName("batchSize");
     }
@@ -151,26 +129,25 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task MessagesReturnedInOrderTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
-        var context1 = new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+        var context1 = new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
         {
             Destination = "order-test",
             Value = [1]
         };
-        var context2 = new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+        var context2 = new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
         {
             Destination = "order-test",
             Value = [2]
         };
 
-        await _storage.SaveAsync(context1);
-        await _storage.SaveAsync(context2);
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            await _storage.SaveAsync(context1);
+            await _storage.SaveAsync(context2);
+            scope.Complete();
+        }
 
-        var messages = await _storage.FetchAsync(100, transaction, CancellationToken.None);
+        var messages = await _storage.FetchAsync(100, CancellationToken.None);
         messages.Count.Should().Be(2);
         messages.ElementAt(0).Value[0].Should().Be(1);
         messages.ElementAt(1).Value[0].Should().Be(2);
@@ -179,13 +156,8 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task DeleteWithEmptyListDoesNotThrowTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
         var act = async () => await _storage.DeleteAsync(
-            Array.Empty<IOutboxMessage>(), transaction);
+            Array.Empty<IOutboxMessage>());
 
         await act.Should().NotThrowAsync();
     }
@@ -193,52 +165,50 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task BatchSizeLimitTest()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
         for (var i = 0; i < 5; i++)
         {
-            var context = new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            var context = new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
             {
                 Destination = "batch-test",
                 Value = [(byte) i]
             };
-            await _storage.SaveAsync(context);
+            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+            {
+                await _storage.SaveAsync(context);
+                scope.Complete();
+            }
         }
 
-        var messages = await _storage.FetchAsync(3, transaction, CancellationToken.None);
+        var messages = await _storage.FetchAsync(3, CancellationToken.None);
         messages.Count.Should().Be(3);
     }
 
     [Fact]
     public async Task SaveBatchAsync_SavesAllMessages()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
         var contexts = new List<IProduceContext>
         {
-            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
             {
                 Destination = "batch-test", Value = [1]
             },
-            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
             {
                 Destination = "batch-test", Value = [2]
             },
-            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
             {
                 Destination = "batch-test", Value = [3]
             }
         };
 
-        await _storage.SaveBatchAsync(contexts);
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            await _storage.SaveBatchAsync(contexts);
+            scope.Complete();
+        }
 
-        var messages = await _storage.FetchAsync(100, transaction, CancellationToken.None);
+        var messages = await _storage.FetchAsync(100, CancellationToken.None);
         messages.Count.Should().Be(3);
         messages.Select(m => m.Value[0]).Should().BeEquivalentTo(new byte[] {1, 2, 3});
     }
@@ -246,18 +216,13 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task SaveBatchAsync_NullDestination_Throws()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
         var contexts = new List<IProduceContext>
         {
-            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
             {
                 Destination = "valid", Value = [1]
             },
-            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
             {
                 Destination = null, Value = [2]
             }
@@ -271,18 +236,13 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task SaveBatchAsync_NullValue_Throws()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
         var contexts = new List<IProduceContext>
         {
-            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
             {
                 Destination = "valid", Value = [1]
             },
-            new ProduceContext(transaction, Mock.Of<IServiceProvider>(), CancellationToken.None)
+            new ProduceContext(Mock.Of<IServiceProvider>(), CancellationToken.None)
             {
                 Destination = "valid", Value = null
             }
@@ -296,11 +256,6 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     [Fact]
     public async Task SaveBatchAsync_EmptyBatch_DoesNotThrow()
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        var transaction = await connection.BeginTransactionAsync();
-        _transactions.Add(transaction);
-
         var act = async () => await _storage.SaveBatchAsync(
             Array.Empty<IProduceContext>());
 

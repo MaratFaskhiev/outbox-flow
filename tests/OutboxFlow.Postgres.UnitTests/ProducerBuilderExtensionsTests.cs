@@ -18,7 +18,7 @@ public sealed class ProducerBuilderExtensionsTests : IDisposable
     {
         _builder.SetupSet(x => x.OutboxStorageRegistrar = It.IsAny<ProducerOutboxStorageRegistrar>());
 
-        _builder.Object.UsePostgres();
+        _builder.Object.UsePostgres("connectionString");
 
         _builder.VerifySet(x => x.OutboxStorageRegistrar = It.IsAny<ProducerOutboxStorageRegistrar>(), Times.Once);
     }
