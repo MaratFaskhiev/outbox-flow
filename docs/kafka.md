@@ -1,4 +1,4 @@
-# Kafka Destination Guide
+﻿# Kafka Destination Guide
 
 OutboxFlow uses Apache Kafka as the default destination for consumed outbox messages. The `SendToKafka` extension method sends messages to a Kafka topic.
 
@@ -11,9 +11,9 @@ services.AddKafka();
 ```
 
 This registers:
-- `DefaultKafkaProducerBuilder` — the default Kafka producer builder
-- `IKafkaProducerBuilder` — registered via factory that returns the same `DefaultKafkaProducerBuilder` instance
-- `IKafkaProducerRegistry` — manages producer instances and reuses them across messages
+- `DefaultKafkaProducerBuilder` â€” the default Kafka producer builder
+- `IKafkaProducerBuilder` â€” registered via factory that returns the same `DefaultKafkaProducerBuilder` instance
+- `IKafkaProducerRegistry` â€” manages producer instances and reuses them across messages
 
 ### Recommended Configuration
 
@@ -41,7 +41,7 @@ var producerConfig = new ProducerConfig
     .ApplyBatchDefaults();
 ```
 
-This sets `LingerMs=50` (wait up to 50ms to accumulate messages) and `BatchSize=65536` (64 KB batch per partition) unless explicitly overridden. The Confluent.Kafka producer's `RecordAccumulator` collects messages per-partition and flushes them as a single `ProduceRequest` — this provides wire-level batching for both single and batch produce APIs.
+This sets `LingerMs=50` (wait up to 50ms to accumulate messages) and `BatchSize=65536` (64 KB batch per partition) unless explicitly overridden. The Confluent.Kafka producer's `RecordAccumulator` collects messages per-partition and flushes them as a single `ProduceRequest` â€” this provides wire-level batching for both single and batch produce APIs.
 
 > **Note:** `ProducerConfig` is compared by reference equality in the producer registry.
 > Always reuse the same config instance for all messages sharing the same broker settings.
@@ -95,7 +95,8 @@ The default implementation creates a standard `ProducerBuilder<byte[], byte[]>` 
 See `samples/OutboxFlow.Sample/CustomKafkaProducerBuilder.cs` for a complete example:
 
 ```csharp
-public sealed class CustomKafkaProducerBuilder : IKafkaProducerBuilder
+<!-- SNIPPET: docs_ka_custom -->
+internal sealed class CustomKafkaProducerBuilder : IKafkaProducerBuilder
 {
     public IProducer<byte[], byte[]> Create(ProducerConfig producerConfig)
     {
@@ -103,6 +104,7 @@ public sealed class CustomKafkaProducerBuilder : IKafkaProducerBuilder
             .Build();
     }
 }
+<!-- ENDSNIPPET: docs_ka_custom -->
 ```
 
 Register the custom builder and use it:

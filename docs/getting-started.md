@@ -1,4 +1,4 @@
-# Getting Started
+﻿# Getting Started
 
 This guide walks through setting up OutboxFlow with PostgreSQL storage and Kafka destination.
 
@@ -78,137 +78,177 @@ public sealed class MyMessage
 
 Configure DI in `Program.cs`:
 
-```csharp
-using Confluent.Kafka;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using OutboxFlow.Configuration;
-using OutboxFlow.Kafka;
-using OutboxFlow.Postgres;
-using OutboxFlow.Produce.Configuration;
-using OutboxFlow.Serialization;
-
-var connectionString = "Host=localhost;Database=outbox;Username=postgres;Password=postgres";
-
-var producerConfig = new ProducerConfig
+<!-- SNIPPET: docs_gs_config -->
+private static void ConfigureServices(HostBuilderContext hostBuilderContext, IServiceCollection services)
 {
-    BootstrapServers = "localhost:9092"
-};
+    services.AddLogging(cfg => cfg.AddConsole());
 
-var host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices((ctx, services) =>
+    var producerConfig = new ProducerConfig
     {
-        services
-            .AddKafka()
-            .AddOutbox(outboxBuilder =>
-                outboxBuilder
-                    .AddProducer(producer => producer
-                        .UsePostgres()
-                        .ForMessage<MyMessage>(pipeline =>
-                            pipeline
-                                .SerializeWithJson()
-                                .SetDestination("my-topic")
-                                .Save()
-                        )
-                    )
-                    .AddConsumer(consumer =>
-                        consumer
-                            .UsePostgres(connectionString)
-                            .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
-                    )
-            );
+        BootstrapServers = "localhost:9092"
+    };
 
-        services.AddHostedService<Worker>();
-    })
-    .Build();
+    #region docs_qs_config
+    services
+        // Register a custom IKafkaProducerBuilder
+        .AddSingleton<IKafkaProducerBuilder, CustomKafkaProducerBuilder>()
+        // Register Apache Kafka dependencies
+        .AddKafka()
+        // Register the outbox dependencies
+        .AddOutbox(outboxBuilder =>
+            outboxBuilder
+                // Register the producer dependencies
+                .AddProducer(producer => producer
+                    // Use PostgreSQL as an underlying storage
+                    .UsePostgres(hostBuilderContext.Configuration.GetConnectionString("Postgres")!)
+                    // Configure pipeline for the SampleTextModel message type
+                    .ForMessage<SampleTextModel>(pipeline =>
+                        pipeline
+                            // Add sample synchronous middleware
+                            .AddSyncStep<LoggingMiddleware, SampleTextModel>()
+                            // Convert message to the prototype model
+                            .AddSyncStep((message, _) => new Protos.SampleTextModel
+                            {
+                                Value = message.Value
+                            })
+                            // Serialize the prototype model to a byte array
+                            .SerializeWithProtobuf()
+                            // Add some header
+                            .AddSyncStep((message, context) =>
+                            {
+                                context.Headers.Add("timestamp", DateTime.UtcNow.ToString("O"));
+                                return message;
+                            })
+                            // Set the message destination
+                            .SetDestination("topic")
+                            // Save the message to a storage
+                            .Save()
+                    )
+                    #region docs_qs_batch_config
+                    // Configure pipeline for batch message processing
+                    .ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
+                        pipeline
+                            .ForEach(sub =>
+                            {
+                                sub.AddSyncStep<LoggingMiddleware, SampleTextModel>()
+                                    .AddSyncStep((message, _) => new Protos.SampleTextModel
+                                    {
+                                        Value = message.Value
+                                    })
+                                    .SerializeWithProtobuf()
+                                    .AddSyncStep((message, context) =>
+                                    {
+                                        context.Headers.Add("timestamp",
+                                            DateTime.UtcNow.ToString("O"));
+                                        return message;
+                                    })
+                                    .SetDestination("topic");
+                            })
+                            .SaveBatch()
+                    )
+                    #endregion
+                )
+                // Register the consumer dependencies
+                .AddConsumer(consumer =>
+                    consumer
+                        // Use PostgreSQL as an underlying storage
+                        .UsePostgres(hostBuilderContext.Configuration.GetConnectionString("Postgres")!)
+                        // Configure the default pipeline for outbox messages.
+                        // Default route will be used for all destinations which are not configured explicitly
+                        .SetDefaultRoute(pipeline =>
+                            pipeline.SendToKafka<IOutboxMessage, CustomKafkaProducerBuilder>(producerConfig))
+                )
+        );
+    #endregion
 
-await host.RunAsync();
-```
+    #region docs_mw_register
+    services.AddScoped<LoggingMiddleware>();
+    #endregion
+
+    services.AddHostedService<Worker>();
+}
+<!-- ENDSNIPPET: docs_gs_config -->
 
 ## 6. Create a Producer Worker
 
-```csharp
-// Worker.cs
-using System.Data;
-using Microsoft.Extensions.Hosting;
-using Npgsql;
-using OutboxFlow.Produce;
-
-namespace MyOutboxApp;
-
-public sealed class Worker : BackgroundService
+<!-- SNIPPET: docs_gs_worker -->
+internal sealed class Worker : BackgroundService
 {
+    private static readonly Action<ILogger, Exception?> LogStarted =
+        LoggerMessage.Define(LogLevel.Information, new EventId(0), "Background worker is started.");
+
+    private readonly ILogger<Worker> _logger;
     private readonly IProducer _producer;
 
-    public Worker(IProducer producer)
+    public Worker(IProducer producer, IConfiguration configuration, ILogger<Worker> logger)
     {
         _producer = producer;
+        _logger = logger;
     }
 
+    #region docs_qs_produce
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        LogStarted(_logger, null);
+
         var messageId = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
             messageId++;
 
-            await using var connection = new NpgsqlConnection(
-                "Host=localhost;Database=outbox;Username=postgres;Password=postgres");
-            await connection.OpenAsync(stoppingToken);
+            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+            {
+                await _producer.ProduceAsync(
+                    new SampleTextModel($"Message #{messageId}"),
+                    stoppingToken).ConfigureAwait(false);
 
-            await using var transaction = await connection.BeginTransactionAsync(
-                IsolationLevel.ReadCommitted, stoppingToken);
+                scope.Complete();
+            }
 
-            await _producer.ProduceAsync(
-                new MyMessage($"Message #{messageId}"),
-                transaction,
-                stoppingToken);
-
-            await transaction.CommitAsync(stoppingToken);
-
-            await Task.Delay(10000, stoppingToken);
+            await Task.Delay(10000, stoppingToken).ConfigureAwait(false);
         }
     }
+    #endregion
+
+    #region docs_gs_batch
+    // ReSharper disable once UnusedMember.Glocal
+    // ReSharper disable once UnusedMember.Local
+    private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
+    {
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
+                new SampleTextModel($"Batch message #{i}")).ToArray();
+
+            await _producer.ProduceAsync(
+                messages, stoppingToken).ConfigureAwait(false);
+
+            scope.Complete();
+        }
+    }
+    #endregion
 }
-```
+<!-- ENDSNIPPET: docs_gs_worker -->
 
 For batch produce, pass a collection to `ProduceAsync` and configure the pipeline with `ForEach<TItem>()` + `SaveBatch()`:
 
-```csharp
-// Configuration
-.ForMessage<IReadOnlyCollection<MyMessage>>(pipeline =>
-    pipeline
-        .ForEach<MyMessage>(sub =>
-        {
-            sub.AddSyncStep((message, _) => new Protos.MyMessage
-            {
-                Value = message.Value
-            })
-            .SerializeWithProtobuf()
-            .SetDestination("my-topic");
-        })
-        .SaveBatch()
-)
-
-// Usage
-private async Task ProduceBatchAsync(CancellationToken stoppingToken)
+<!-- SNIPPET: docs_gs_batch -->
+// ReSharper disable once UnusedMember.Glocal
+// ReSharper disable once UnusedMember.Local
+private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
 {
-    await using var connection = new NpgsqlConnection(
-        "Host=localhost;Database=outbox;Username=postgres;Password=postgres");
-    await connection.OpenAsync(stoppingToken);
+    using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+    {
+        IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
+            new SampleTextModel($"Batch message #{i}")).ToArray();
 
-    await using var transaction = await connection.BeginTransactionAsync(
-        IsolationLevel.ReadCommitted, stoppingToken);
+        await _producer.ProduceAsync(
+            messages, stoppingToken).ConfigureAwait(false);
 
-    var messages = Enumerable.Range(0, 5).Select(i =>
-        new MyMessage($"Batch message #{i}")).ToArray();
-
-    await _producer.ProduceAsync(
-        messages, transaction, stoppingToken);
-
-    await transaction.CommitAsync(stoppingToken);
+        scope.Complete();
+    }
 }
-```
+<!-- ENDSNIPPET: docs_gs_batch -->
 
 ## 7. Run the Application
 
@@ -231,6 +271,6 @@ docker exec -it outbox-flow-kafka-1 kafka-console-consumer \
 
 ## Next Steps
 
-- [Architecture](architecture.md) — understand the pipeline pattern
-- [Configuration](configuration.md) — full fluent API reference
-- [Middleware](middleware.md) — add custom processing steps
+- [Architecture](architecture.md) â€” understand the pipeline pattern
+- [Configuration](configuration.md) â€” full fluent API reference
+- [Middleware](middleware.md) â€” add custom processing steps

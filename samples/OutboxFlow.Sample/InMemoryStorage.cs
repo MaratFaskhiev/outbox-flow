@@ -1,9 +1,14 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
+using OutboxFlow.Consume.Configuration;
 using OutboxFlow.Produce;
+using OutboxFlow.Produce.Configuration;
 using OutboxFlow.Storage;
+using OutboxFlow.Storage.Configuration;
 
 namespace OutboxFlow.Sample;
 
+#region docs_storage_impl
 internal sealed class InMemoryStorage : IOutboxStorage
 {
     private readonly ConcurrentQueue<IOutboxMessage> _messages = new();
@@ -78,3 +83,32 @@ internal sealed class InMemoryStorage : IOutboxStorage
         public byte[] Value { get; }
     }
 }
+#endregion
+
+#region docs_storage_registrar
+internal sealed class InMemoryStorageRegistrar : IOutboxStorageRegistrar
+{
+    public void Register(IServiceCollection services)
+    {
+        services.AddSingleton<IOutboxStorage, InMemoryStorage>();
+    }
+}
+
+internal static class ProducerBuilderExtensions
+{
+    public static IProducerBuilder UseInMemory(this IProducerBuilder builder)
+    {
+        builder.OutboxStorageRegistrar = new InMemoryStorageRegistrar();
+        return builder;
+    }
+}
+
+internal static class ConsumerBuilderExtensions
+{
+    public static IConsumerBuilder UseInMemory(this IConsumerBuilder builder)
+    {
+        builder.SetOutboxStorageRegistrar(new InMemoryStorageRegistrar());
+        return builder;
+    }
+}
+#endregion

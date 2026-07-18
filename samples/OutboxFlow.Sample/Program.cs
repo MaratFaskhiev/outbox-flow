@@ -39,6 +39,7 @@ internal static class Program
         await host.RunAsync(cts.Token).ConfigureAwait(false);
     }
 
+    #region docs_gs_config
     private static void ConfigureServices(HostBuilderContext hostBuilderContext, IServiceCollection services)
     {
         services.AddLogging(cfg => cfg.AddConsole());
@@ -48,6 +49,7 @@ internal static class Program
             BootstrapServers = "localhost:9092"
         };
 
+        #region docs_qs_config
         services
             // Register a custom IKafkaProducerBuilder
             .AddSingleton<IKafkaProducerBuilder, CustomKafkaProducerBuilder>()
@@ -83,6 +85,7 @@ internal static class Program
                                 // Save the message to a storage
                                 .Save()
                         )
+                        #region docs_qs_batch_config
                         // Configure pipeline for batch message processing
                         .ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
                             pipeline
@@ -104,6 +107,7 @@ internal static class Program
                                 })
                                 .SaveBatch()
                         )
+                        #endregion
                     )
                     // Register the consumer dependencies
                     .AddConsumer(consumer =>
@@ -116,9 +120,13 @@ internal static class Program
                                 pipeline.SendToKafka<IOutboxMessage, CustomKafkaProducerBuilder>(producerConfig))
                     )
             );
+        #endregion
 
+        #region docs_mw_register
         services.AddScoped<LoggingMiddleware>();
+        #endregion
 
         services.AddHostedService<Worker>();
     }
+    #endregion
 }

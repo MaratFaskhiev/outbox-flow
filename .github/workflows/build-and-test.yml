@@ -25,6 +25,10 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: Verify documentation snippets
+      shell: pwsh
+      run: ./scripts/verify-doc-snippets.ps1
+
     - name: Cache NuGet packages
       uses: actions/cache@v4
       with:
@@ -38,6 +42,20 @@ jobs:
 
     - name: Build
       run: dotnet build --configuration Release --no-restore
+
+    - name: Generate configuration reference docs
+      shell: pwsh
+      run: ./scripts/generate-config-docs.ps1 -Configuration Release -TargetFramework net10.0
+
+    - name: Verify configuration docs are up to date
+      shell: pwsh
+      run: |
+        $diff = git diff docs/configuration.md
+        if ($diff) {
+          Write-Host "[DIRTY] docs/configuration.md"
+          exit 1
+        }
+        Write-Host "[OK] docs/configuration.md is up to date"
 
     - name: Test
       run: dotnet test --no-restore --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage

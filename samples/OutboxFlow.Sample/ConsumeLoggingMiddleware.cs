@@ -4,6 +4,7 @@ using OutboxFlow.Storage;
 
 namespace OutboxFlow.Sample;
 
+#region docs_mw_consume
 internal sealed class ConsumeLoggingMiddleware : IConsumeSyncMiddleware<IOutboxMessage, IOutboxMessage>
 {
     private static readonly Action<ILogger, string, Exception?> LogMessage =
@@ -27,3 +28,4 @@ internal sealed class ConsumeLoggingMiddleware : IConsumeSyncMiddleware<IOutboxM
         return message;
     }
 }
+#endregion

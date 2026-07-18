@@ -3,6 +3,7 @@ using OutboxFlow.Kafka;
 
 namespace OutboxFlow.Sample;
 
+#region docs_ka_custom
 internal sealed class CustomKafkaProducerBuilder : IKafkaProducerBuilder
 {
     public IProducer<byte[], byte[]> Create(ProducerConfig producerConfig)
@@ -11,3 +12,4 @@ internal sealed class CustomKafkaProducerBuilder : IKafkaProducerBuilder
             .Build();
     }
 }
+#endregion
