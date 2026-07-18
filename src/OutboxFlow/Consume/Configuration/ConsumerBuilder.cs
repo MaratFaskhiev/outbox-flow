@@ -32,6 +32,7 @@ public sealed class ConsumerBuilder : IConsumerBuilder
     /// <inheritdoc />
     public IConsumerBuilder SetDefaultRoute(Action<IConsumePipelineBuilder> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
         if (_defaultPipeline != null)
             throw new InvalidOperationException(
                 "Default consume pipeline is already registered.");
@@ -46,6 +47,7 @@ public sealed class ConsumerBuilder : IConsumerBuilder
     /// <inheritdoc />
     public IConsumerBuilder AddRoute(string destination, Action<IConsumePipelineBuilder> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
         if (_destinationPipelines.ContainsKey(destination))
             throw new InvalidOperationException(
                 $"Consume pipeline for the destination \"{destination}\" is already registered.");

@@ -19,6 +19,7 @@ public static partial class ProducePipelineStepBuilderExtensions
         this IProducePipelineStepBuilder<TIn, TOut> step)
         where TSerializer : ISerializer<byte[]>
     {
+        ArgumentNullException.ThrowIfNull(step);
         return step.AddSyncStep((message, context) =>
         {
             var serializer = context.ServiceProvider.GetRequiredService<TSerializer>();
@@ -40,6 +41,7 @@ public static partial class ProducePipelineStepBuilderExtensions
         this IProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
         where TSerializer : ISerializer<byte[]>
     {
+        ArgumentNullException.ThrowIfNull(step);
         return step.AddSyncStep((message, context) =>
         {
             var serializer = context.ServiceProvider.GetRequiredService<TSerializer>();

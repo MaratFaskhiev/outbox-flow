@@ -42,51 +42,59 @@ where expire_at < clock_timestamp() or id = @id;
     public async ValueTask<IOutboxLock?> LockAsync(
         TimeSpan lockTimeout, CancellationToken cancellationToken = default)
     {
-        await using var connection = await GetConnectionAsync(cancellationToken);
+        var connection = await GetConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            using var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = CheckLockCommandText;
+            var existingLock = await checkCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            if (existingLock != null) return null;
 
-        using var checkCommand = connection.CreateCommand();
-        checkCommand.CommandText = CheckLockCommandText;
-        var existingLock = await checkCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-        if (existingLock != null) return null;
+            using var tryLockCommand = connection.CreateCommand();
+            tryLockCommand.CommandText = TryLockCommandText;
+            tryLockCommand.Parameters.AddWithValue("@lock_key", LockKey);
 
-        using var tryLockCommand = connection.CreateCommand();
-        tryLockCommand.CommandText = TryLockCommandText;
-        tryLockCommand.Parameters.AddWithValue("@lock_key", LockKey);
+            var lockAcquired = (bool?) await tryLockCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            if (lockAcquired != true) return null;
 
-        var lockAcquired = (bool?) await tryLockCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-        if (lockAcquired != true) return null;
+            using var insertCommand = connection.CreateCommand();
+            insertCommand.CommandText = InsertCommandText;
+            insertCommand.Parameters.AddWithValue("@timeout", lockTimeout);
 
-        using var insertCommand = connection.CreateCommand();
-        insertCommand.CommandText = InsertCommandText;
-        insertCommand.Parameters.AddWithValue("@timeout", lockTimeout);
+            var reader = await insertCommand
+                .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
+                .ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                var id = await reader.GetFieldValueAsync<Guid>(0, cancellationToken).ConfigureAwait(false);
+                var expireAt = await reader.GetFieldValueAsync<DateTime>(1, cancellationToken).ConfigureAwait(false);
 
-        await using var reader = await insertCommand
-            .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
-            .ConfigureAwait(false);
-        await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-        var id = await reader.GetFieldValueAsync<Guid>(0, cancellationToken).ConfigureAwait(false);
-        var expireAt = await reader.GetFieldValueAsync<DateTime>(1, cancellationToken).ConfigureAwait(false);
-
-        return new OutboxLock(id, expireAt);
+                return new OutboxLock(id, expireAt);
+            }
+        }
     }
 
     /// <inheritdoc />
     public async ValueTask ReleaseAsync(IOutboxLock outboxLock,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = await GetConnectionAsync(cancellationToken);
+        ArgumentNullException.ThrowIfNull(outboxLock);
+        var connection = await GetConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = ReleaseCommandText;
+            command.Parameters.AddWithValue("@id", outboxLock.Id);
 
-        using var command = connection.CreateCommand();
-        command.CommandText = ReleaseCommandText;
-        command.Parameters.AddWithValue("@id", outboxLock.Id);
-
-        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async ValueTask<NpgsqlConnection> GetConnectionAsync(CancellationToken ct)
     {
         var connection = (NpgsqlConnection) _connectionFactory.Create();
-        await connection.OpenAsync(ct);
+        await connection.OpenAsync(ct).ConfigureAwait(false);
         return connection;
     }
 }

@@ -96,11 +96,11 @@ public sealed class ProducerBuilderTests : IDisposable
 
         pipelineRegistry.Should().NotBeNull();
 
-        var pipeline = pipelineRegistry.GetPipeline<string>();
+        var pipeline = pipelineRegistry!.GetPipeline<string>();
 
         pipeline.Should().NotBeNull();
 
-        await pipeline.RunAsync(string.Empty, Mock.Of<IProduceContext>());
+        await pipeline!.RunAsync(string.Empty, Mock.Of<IProduceContext>());
 
         isInvoked.Should().BeTrue();
     }

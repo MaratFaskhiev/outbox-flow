@@ -15,8 +15,7 @@ public static class ServiceCollectionExtensions
     /// <param name="configure">Outbox configure action.</param>
     public static IServiceCollection AddOutbox(this IServiceCollection services, Action<IOutboxBuilder> configure)
     {
-        if (configure == null)
-            throw new ArgumentNullException(nameof(configure));
+        ArgumentNullException.ThrowIfNull(configure);
 
         services.TryAddSingleton<IClock, Clock>();
 

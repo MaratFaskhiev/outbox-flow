@@ -15,6 +15,7 @@ public sealed class ProducerBuilder : IProducerBuilder
     /// <inheritdoc />
     public IProducerBuilder ForMessage<T>(Action<IProducePipelineBuilder<T>> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
         if (_messagePipelines.ContainsKey(typeof(T)))
             throw new InvalidOperationException(
                 $"Produce pipeline for the message type \"{typeof(T).Name}\" is already registered.");

@@ -21,6 +21,9 @@ public sealed class ProducerOutboxStorageRegistrarTests : IDisposable
         _services.Setup(x => x.Count).Returns(0);
         _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
             d.ServiceType == typeof(IOutboxStorage) && d.ImplementationType == typeof(OutboxStorage))));
+        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
+            d.ServiceType == typeof(IDbConnectionFactory) &&
+            d.ImplementationInstance is DefaultDbConnectionFactory)));
 
         _registrar.Register(_services.Object);
     }

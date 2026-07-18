@@ -12,6 +12,7 @@
         <!-- CA1848: Use the LoggerMessage delegates -->
         <!-- CA1707: Identifiers should not contain underscores -->
         <!-- CA2007: Do not directly await a Task -->
+        <!-- CA1515: Consider making public types internal -->
         <NoWarn>CA1062;CA1848;CA1707;CA2007;CA1515</NoWarn>
     </PropertyGroup>
 

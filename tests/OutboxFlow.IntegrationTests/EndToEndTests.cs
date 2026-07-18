@@ -62,7 +62,7 @@ public sealed class EndToEndTests : IClassFixture<EndToEndFixture>, IDisposable
 
             var kafkaMessage = new Message<byte[], byte[]>
             {
-                Key = message.Key,
+                Key = message.Key!,
                 Value = message.Value
             };
             if (message.Headers.Count != 0)

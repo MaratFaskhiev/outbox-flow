@@ -1,4 +1,4 @@
-using OutboxFlow.Produce.Configuration;
+﻿using OutboxFlow.Produce.Configuration;
 
 namespace OutboxFlow.Postgres;
 
@@ -14,6 +14,7 @@ public static class ProducerBuilderExtensions
     /// <param name="connectionString">Database connection string.</param>
     public static IProducerBuilder UsePostgres(this IProducerBuilder builder, string connectionString)
     {
+        ArgumentNullException.ThrowIfNull(builder);
         builder.OutboxStorageRegistrar = new ProducerOutboxStorageRegistrar(connectionString);
 
         return builder;

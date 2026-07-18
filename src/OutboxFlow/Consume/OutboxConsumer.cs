@@ -7,7 +7,7 @@ using OutboxFlow.Storage.Configuration;
 namespace OutboxFlow.Consume;
 
 /// <inheritdoc />
-public sealed class OutboxConsumer : IOutboxConsumer
+public sealed partial class OutboxConsumer : IOutboxConsumer
 {
     private readonly ILogger<OutboxConsumer> _logger;
     private readonly IOptionsMonitor<OutboxStorageConsumerOptions> _options;
@@ -65,7 +65,7 @@ public sealed class OutboxConsumer : IOutboxConsumer
             scope.Complete();
         }
 
-        _logger.LogDebug("Fetched {Count} messages.", messages.Count);
+        Log.FetchedMessages(_logger, messages.Count);
 
         foreach (var message in messages)
         {
@@ -79,7 +79,7 @@ public sealed class OutboxConsumer : IOutboxConsumer
             await consumePipeline.RunAsync(message, context).ConfigureAwait(false);
         }
 
-        _logger.LogDebug("Delivered {Count} messages.", messages.Count);
+        Log.DeliveredMessages(_logger, messages.Count);
 
         using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
@@ -94,7 +94,7 @@ public sealed class OutboxConsumer : IOutboxConsumer
             scope.Complete();
         }
 
-        _logger.LogDebug("Deleted {Count} messages.", messages.Count);
+        Log.DeletedMessages(_logger, messages.Count);
 
         return new OutboxConsumeResult(true, messages.Count);
     }

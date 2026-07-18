@@ -16,6 +16,7 @@ public static class ProducerConfigExtensions
     /// <returns>The same <paramref name="config" /> instance for chaining.</returns>
     public static ProducerConfig ApplyOutboxDefaults(this ProducerConfig config)
     {
+        ArgumentNullException.ThrowIfNull(config);
         config.EnableIdempotence ??= true;
         config.Acks ??= Acks.All;
         return config;
@@ -30,6 +31,7 @@ public static class ProducerConfigExtensions
     /// <returns>The same <paramref name="config" /> instance for chaining.</returns>
     public static ProducerConfig ApplyBatchDefaults(this ProducerConfig config)
     {
+        ArgumentNullException.ThrowIfNull(config);
         config.LingerMs ??= 50;
         config.BatchSize ??= 65536;
         return config;

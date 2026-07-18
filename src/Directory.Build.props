@@ -4,8 +4,6 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AnalysisMode>All</AnalysisMode>
-        <!-- CA1062: Validate arguments of public methods -->
-        <!-- CA1848: Use the LoggerMessage delegates -->
-        <NoWarn>CA1062;CA1848;CA2227;CA1510;CA1873;CA1727;CA2007;CA1822;CA1859</NoWarn>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 </Project>

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace OutboxFlow.Kafka;
 
 /// <inheritdoc />
-public sealed class DefaultKafkaProducerBuilder : IKafkaProducerBuilder
+public sealed partial class DefaultKafkaProducerBuilder : IKafkaProducerBuilder
 {
     private readonly ILogger<DefaultKafkaProducerBuilder> _logger;
     private readonly IKafkaProducerRegistry _registry;
@@ -32,21 +32,13 @@ public sealed class DefaultKafkaProducerBuilder : IKafkaProducerBuilder
     {
         if (error.IsFatal)
         {
-            _logger.LogError(
-                "Kafka producer {name} error: {code} ({reason})",
-                producer.Name,
-                error.Code,
-                error.Reason);
+            Log.FatalError(_logger, producer.Name, error.Code, error.Reason);
 
             _registry.Remove(producerConfig);
         }
         else
         {
-            _logger.LogWarning(
-                "Kafka producer {name} error: {code} ({reason})",
-                producer.Name,
-                error.Code,
-                error.Reason);
+            Log.NonFatalError(_logger, producer.Name, error.Code, error.Reason);
         }
     }
 }

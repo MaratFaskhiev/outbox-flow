@@ -13,7 +13,7 @@ using OutboxFlow.Storage;
 
 namespace OutboxFlow.Sample;
 
-public static class Program
+internal static class Program
 {
     public static async Task Main(string[] args)
     {
@@ -36,7 +36,7 @@ public static class Program
             .ConfigureServices(ConfigureServices)
             .Build();
 
-        await host.RunAsync(cts.Token);
+        await host.RunAsync(cts.Token).ConfigureAwait(false);
     }
 
     private static void ConfigureServices(HostBuilderContext hostBuilderContext, IServiceCollection services)

@@ -16,6 +16,7 @@ public static partial class ProducePipelineStepBuilderExtensions
     public static IProducePipelineStepBuilder<TOut, TOut> SerializeWithJson<TIn, TOut>(
         this IProducePipelineStepBuilder<TIn, TOut> step)
     {
+        ArgumentNullException.ThrowIfNull(step);
         var jsonSerializer = new JsonSerializer();
 
         return step.AddSyncStep((message, context) =>
@@ -36,6 +37,7 @@ public static partial class ProducePipelineStepBuilderExtensions
     public static IProducePipelineStepBuilder<TOut, TOut> SerializeKeyWithJson<TIn, TOut, TKey>(
         this IProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
     {
+        ArgumentNullException.ThrowIfNull(step);
         var jsonSerializer = new JsonSerializer();
 
         return step.AddSyncStep((message, context) =>

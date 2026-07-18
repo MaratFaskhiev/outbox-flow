@@ -15,6 +15,7 @@ public sealed class KafkaProducerRegistryTests : IClassFixture<KafkaFixture>, ID
 
     public KafkaProducerRegistryTests(KafkaFixture kafkaFixture)
     {
+        ArgumentNullException.ThrowIfNull(kafkaFixture);
         _bootstrapAddress = kafkaFixture.BootstrapAddress;
     }
 

@@ -21,14 +21,23 @@ public sealed class OutboxStorageTests : IAsyncLifetime
         _storage = new OutboxStorage(new DefaultDbConnectionFactory(_connectionString));
     }
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        return Task.CompletedTask;
+        await CleanupAsync();
     }
 
-    public Task DisposeAsync()
+    public async Task DisposeAsync()
     {
-        return Task.CompletedTask;
+        await CleanupAsync();
+    }
+
+    private async Task CleanupAsync()
+    {
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = "delete from outbox_message; delete from outbox_state;";
+        await cmd.ExecuteNonQueryAsync();
     }
 
     [Fact]

@@ -7,8 +7,11 @@ using OutboxFlow.Sample.Models;
 
 namespace OutboxFlow.Sample;
 
-public sealed class Worker : BackgroundService
+internal sealed class Worker : BackgroundService
 {
+    private static readonly Action<ILogger, Exception?> LogStarted =
+        LoggerMessage.Define(LogLevel.Information, new EventId(0), "Background worker is started.");
+
     private readonly ILogger<Worker> _logger;
     private readonly IProducer _producer;
 
@@ -20,7 +23,7 @@ public sealed class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Background worker is started.");
+        LogStarted(_logger, null);
 
         var messageId = 0;
         while (!stoppingToken.IsCancellationRequested)
@@ -31,12 +34,12 @@ public sealed class Worker : BackgroundService
             {
                 await _producer.ProduceAsync(
                     new SampleTextModel($"Message #{messageId}"),
-                    stoppingToken);
+                    stoppingToken).ConfigureAwait(false);
 
                 scope.Complete();
             }
 
-            await Task.Delay(10000, stoppingToken);
+            await Task.Delay(10000, stoppingToken).ConfigureAwait(false);
         }
     }
 
@@ -50,7 +53,7 @@ public sealed class Worker : BackgroundService
                 new SampleTextModel($"Batch message #{i}")).ToArray();
 
             await _producer.ProduceAsync(
-                messages, stoppingToken);
+                messages, stoppingToken).ConfigureAwait(false);
 
             scope.Complete();
         }

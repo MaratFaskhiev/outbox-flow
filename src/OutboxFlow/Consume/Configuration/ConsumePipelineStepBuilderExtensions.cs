@@ -18,6 +18,7 @@ public static class ConsumePipelineStepBuilderExtensions
         this IConsumePipelineStepBuilder<TIn, TOut> step)
         where TMiddleware : IConsumeAsyncMiddleware<TOut, TOut>
     {
+        ArgumentNullException.ThrowIfNull(step);
         return step.AddAsyncStep<TMiddleware, TIn, TOut, TOut>();
     }
 
@@ -33,6 +34,7 @@ public static class ConsumePipelineStepBuilderExtensions
         this IConsumePipelineStepBuilder<TIn, TOut> step)
         where TMiddleware : IConsumeAsyncMiddleware<TOut, TNext>
     {
+        ArgumentNullException.ThrowIfNull(step);
         return step.AddAsyncStep(async (message, context) =>
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();
@@ -52,6 +54,7 @@ public static class ConsumePipelineStepBuilderExtensions
         this IConsumePipelineStepBuilder<TIn, TOut> step)
         where TMiddleware : IConsumeSyncMiddleware<TOut, TOut>
     {
+        ArgumentNullException.ThrowIfNull(step);
         return step.AddSyncStep<TMiddleware, TIn, TOut, TOut>();
     }
 
@@ -67,6 +70,7 @@ public static class ConsumePipelineStepBuilderExtensions
         this IConsumePipelineStepBuilder<TIn, TOut> step)
         where TMiddleware : IConsumeSyncMiddleware<TOut, TNext>
     {
+        ArgumentNullException.ThrowIfNull(step);
         return step.AddSyncStep((message, context) =>
         {
             var middleware = context.ServiceProvider.GetRequiredService<TMiddleware>();

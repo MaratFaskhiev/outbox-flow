@@ -9,13 +9,12 @@ namespace OutboxFlow.Postgres.IntegrationTests;
 [Trait("Category", "Integration")]
 public sealed class OutboxLockManagerTests
 {
-    private readonly string _connectionString;
     private readonly OutboxLockManager _manager;
 
     public OutboxLockManagerTests(DatabaseFixture databaseFixture)
     {
-        _connectionString = databaseFixture.ConnectionString;
-        _manager = new OutboxLockManager(new DefaultDbConnectionFactory(_connectionString));
+        var connectionString = databaseFixture.ConnectionString;
+        _manager = new OutboxLockManager(new DefaultDbConnectionFactory(connectionString));
     }
 
     [Fact]
@@ -29,7 +28,7 @@ public sealed class OutboxLockManagerTests
             var outboxLock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
             outboxLock2.Should().BeNull();
 
-            await _manager.ReleaseAsync(outboxLock1, CancellationToken.None);
+            await _manager.ReleaseAsync(outboxLock1!, CancellationToken.None);
             scope.Complete();
         }
 
@@ -61,10 +60,10 @@ public sealed class OutboxLockManagerTests
 
         using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
-            await _manager.ReleaseAsync(lock1, CancellationToken.None);
+            await _manager.ReleaseAsync(lock1!, CancellationToken.None);
             var lock3 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
             lock3.Should().NotBeNull();
-            await _manager.ReleaseAsync(lock3, CancellationToken.None);
+            await _manager.ReleaseAsync(lock3!, CancellationToken.None);
             scope.Complete();
         }
     }
@@ -76,7 +75,7 @@ public sealed class OutboxLockManagerTests
         {
             var lock1 = await _manager.LockAsync(TimeSpan.FromSeconds(1), CancellationToken.None);
             lock1.Should().NotBeNull();
-            await _manager.ReleaseAsync(lock1, CancellationToken.None);
+            await _manager.ReleaseAsync(lock1!, CancellationToken.None);
             scope.Complete();
         }
 
@@ -86,7 +85,7 @@ public sealed class OutboxLockManagerTests
         {
             var lock2 = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
             lock2.Should().NotBeNull();
-            await _manager.ReleaseAsync(lock2, CancellationToken.None);
+            await _manager.ReleaseAsync(lock2!, CancellationToken.None);
             scope.Complete();
         }
     }
@@ -112,9 +111,9 @@ public sealed class OutboxLockManagerTests
             outboxLock = await _manager.LockAsync(TimeSpan.FromMinutes(5), CancellationToken.None);
             outboxLock.Should().NotBeNull();
 
-            await _manager.ReleaseAsync(outboxLock, CancellationToken.None);
+            await _manager.ReleaseAsync(outboxLock!, CancellationToken.None);
 
-            var act = async () => await _manager.ReleaseAsync(outboxLock, CancellationToken.None);
+            var act = async () => await _manager.ReleaseAsync(outboxLock!, CancellationToken.None);
             await act.Should().NotThrowAsync();
 
             scope.Complete();
