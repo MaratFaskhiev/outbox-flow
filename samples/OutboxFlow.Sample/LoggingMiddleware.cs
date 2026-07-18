@@ -4,6 +4,7 @@ using OutboxFlow.Sample.Models;
 
 namespace OutboxFlow.Sample;
 
+#region docs_mw_sync
 internal sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel, SampleTextModel>
 {
     private static readonly Action<ILogger, string, Exception?> LogMessage =
@@ -27,3 +28,4 @@ internal sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel
         return message;
     }
 }
+#endregion

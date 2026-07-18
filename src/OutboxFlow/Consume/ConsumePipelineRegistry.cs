@@ -32,6 +32,7 @@ public sealed class ConsumePipelineRegistry : IConsumePipelineRegistry
         return pipeline ?? _defaultPipeline!;
     }
 
+    /// <inheritdoc />
     public IPipelineStep<IConsumeContext, IOutboxMessage> GetPipeline()
     {
         if (_defaultPipeline == null)

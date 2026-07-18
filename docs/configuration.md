@@ -1,255 +1,1385 @@
 # Configuration Reference
 
-## IOutboxBuilder
+> Auto-generated from compiled assemblies. Run `scripts\generate-config-docs.ps1` to regenerate.
+
+## Table of Contents
+
+### OutboxFlow
+- [OutboxFlow.Clock](#OutboxFlow-Clock)
+- [OutboxFlow.Configuration.IOutboxBuilder](#OutboxFlow-Configuration-IOutboxBuilder)
+- [OutboxFlow.Configuration.IPipelineStepBuilder`2](#OutboxFlow-Configuration-IPipelineStepBuilder-2)
+- [OutboxFlow.Configuration.OutboxBuilder](#OutboxFlow-Configuration-OutboxBuilder)
+- [OutboxFlow.Configuration.ServiceCollectionExtensions](#OutboxFlow-Configuration-ServiceCollectionExtensions)
+- [OutboxFlow.Consume.Configuration.ConsumePipelineBuilder](#OutboxFlow-Consume-Configuration-ConsumePipelineBuilder)
+- [OutboxFlow.Consume.Configuration.ConsumePipelineStepBuilder`2](#OutboxFlow-Consume-Configuration-ConsumePipelineStepBuilder-2)
+- [OutboxFlow.Consume.Configuration.ConsumePipelineStepBuilderExtensions](#OutboxFlow-Consume-Configuration-ConsumePipelineStepBuilderExtensions)
+- [OutboxFlow.Consume.Configuration.ConsumerBuilder](#OutboxFlow-Consume-Configuration-ConsumerBuilder)
+- [OutboxFlow.Consume.Configuration.ConsumerBuilderExtensions](#OutboxFlow-Consume-Configuration-ConsumerBuilderExtensions)
+- [OutboxFlow.Consume.Configuration.IConsumePipelineBuilder](#OutboxFlow-Consume-Configuration-IConsumePipelineBuilder)
+- [OutboxFlow.Consume.Configuration.IConsumePipelineStepBuilder`2](#OutboxFlow-Consume-Configuration-IConsumePipelineStepBuilder-2)
+- [OutboxFlow.Consume.Configuration.IConsumerBuilder](#OutboxFlow-Consume-Configuration-IConsumerBuilder)
+- [OutboxFlow.Consume.ConsumeContext](#OutboxFlow-Consume-ConsumeContext)
+- [OutboxFlow.Consume.ConsumePipelineRegistry](#OutboxFlow-Consume-ConsumePipelineRegistry)
+- [OutboxFlow.Consume.IConsumeAsyncMiddleware`2](#OutboxFlow-Consume-IConsumeAsyncMiddleware-2)
+- [OutboxFlow.Consume.IConsumeContext](#OutboxFlow-Consume-IConsumeContext)
+- [OutboxFlow.Consume.IConsumePipelineRegistry](#OutboxFlow-Consume-IConsumePipelineRegistry)
+- [OutboxFlow.Consume.IConsumeSyncMiddleware`2](#OutboxFlow-Consume-IConsumeSyncMiddleware-2)
+- [OutboxFlow.Consume.IOutboxConsumer](#OutboxFlow-Consume-IOutboxConsumer)
+- [OutboxFlow.Consume.OutboxConsumer](#OutboxFlow-Consume-OutboxConsumer)
+- [OutboxFlow.Consume.OutboxConsumeResult](#OutboxFlow-Consume-OutboxConsumeResult)
+- [OutboxFlow.Consume.OutboxConsumerService](#OutboxFlow-Consume-OutboxConsumerService)
+- [OutboxFlow.IClock](#OutboxFlow-IClock)
+- [OutboxFlow.IPipelineStep`2](#OutboxFlow-IPipelineStep-2)
+- [OutboxFlow.Middleware.IAsyncMiddleware`3](#OutboxFlow-Middleware-IAsyncMiddleware-3)
+- [OutboxFlow.Middleware.ISyncMiddleware`3](#OutboxFlow-Middleware-ISyncMiddleware-3)
+- [OutboxFlow.Pipeline`2](#OutboxFlow-Pipeline-2)
+- [OutboxFlow.PipelineStep`3](#OutboxFlow-PipelineStep-3)
+- [OutboxFlow.Produce.Configuration.IProducePipelineBuilder`1](#OutboxFlow-Produce-Configuration-IProducePipelineBuilder-1)
+- [OutboxFlow.Produce.Configuration.IProducePipelineStepBuilder`2](#OutboxFlow-Produce-Configuration-IProducePipelineStepBuilder-2)
+- [OutboxFlow.Produce.Configuration.IProducerBuilder](#OutboxFlow-Produce-Configuration-IProducerBuilder)
+- [OutboxFlow.Produce.Configuration.ProducePipelineBuilder`1](#OutboxFlow-Produce-Configuration-ProducePipelineBuilder-1)
+- [OutboxFlow.Produce.Configuration.ProducePipelineStepBuilder`2](#OutboxFlow-Produce-Configuration-ProducePipelineStepBuilder-2)
+- [OutboxFlow.Produce.Configuration.ProducePipelineStepBuilderExtensions](#OutboxFlow-Produce-Configuration-ProducePipelineStepBuilderExtensions)
+- [OutboxFlow.Produce.Configuration.ProducerBuilder](#OutboxFlow-Produce-Configuration-ProducerBuilder)
+- [OutboxFlow.Produce.IProduceAsyncMiddleware`2](#OutboxFlow-Produce-IProduceAsyncMiddleware-2)
+- [OutboxFlow.Produce.IProduceContext](#OutboxFlow-Produce-IProduceContext)
+- [OutboxFlow.Produce.IProducePipelineRegistry](#OutboxFlow-Produce-IProducePipelineRegistry)
+- [OutboxFlow.Produce.IProducer](#OutboxFlow-Produce-IProducer)
+- [OutboxFlow.Produce.IProduceSyncMiddleware`2](#OutboxFlow-Produce-IProduceSyncMiddleware-2)
+- [OutboxFlow.Produce.ProduceContext](#OutboxFlow-Produce-ProduceContext)
+- [OutboxFlow.Produce.ProducePipelineRegistry](#OutboxFlow-Produce-ProducePipelineRegistry)
+- [OutboxFlow.Produce.Producer](#OutboxFlow-Produce-Producer)
+- [OutboxFlow.Serialization.ISerializer`1](#OutboxFlow-Serialization-ISerializer-1)
+- [OutboxFlow.Serialization.JsonSerializer](#OutboxFlow-Serialization-JsonSerializer)
+- [OutboxFlow.Serialization.ProducePipelineStepBuilderExtensions](#OutboxFlow-Serialization-ProducePipelineStepBuilderExtensions)
+- [OutboxFlow.Storage.Configuration.IOutboxStorageRegistrar](#OutboxFlow-Storage-Configuration-IOutboxStorageRegistrar)
+- [OutboxFlow.Storage.Configuration.OutboxStorageConsumerOptions](#OutboxFlow-Storage-Configuration-OutboxStorageConsumerOptions)
+- [OutboxFlow.Storage.IDbConnectionFactory](#OutboxFlow-Storage-IDbConnectionFactory)
+- [OutboxFlow.Storage.IOutboxLock](#OutboxFlow-Storage-IOutboxLock)
+- [OutboxFlow.Storage.IOutboxLockManager](#OutboxFlow-Storage-IOutboxLockManager)
+- [OutboxFlow.Storage.IOutboxMessage](#OutboxFlow-Storage-IOutboxMessage)
+- [OutboxFlow.Storage.IOutboxStorage](#OutboxFlow-Storage-IOutboxStorage)
 
-The entry point for configuring OutboxFlow. Obtain it via the `AddOutbox` extension method on `IServiceCollection`.
+### OutboxFlow.Kafka
+- [OutboxFlow.Kafka.ConsumePipelineStepBuilderExtensions](#OutboxFlow-Kafka-ConsumePipelineStepBuilderExtensions)
+- [OutboxFlow.Kafka.DefaultKafkaProducerBuilder](#OutboxFlow-Kafka-DefaultKafkaProducerBuilder)
+- [OutboxFlow.Kafka.IKafkaProducerBuilder](#OutboxFlow-Kafka-IKafkaProducerBuilder)
+- [OutboxFlow.Kafka.IKafkaProducerRegistry](#OutboxFlow-Kafka-IKafkaProducerRegistry)
+- [OutboxFlow.Kafka.KafkaProducerRegistry](#OutboxFlow-Kafka-KafkaProducerRegistry)
+- [OutboxFlow.Kafka.ProducerConfigExtensions](#OutboxFlow-Kafka-ProducerConfigExtensions)
+- [OutboxFlow.Kafka.ServiceCollectionExtensions](#OutboxFlow-Kafka-ServiceCollectionExtensions)
 
-| Method | Description |
-|---|---|
-| `AddProducer(Action<IProducerBuilder> configure)` | Configures produce pipelines for one or more message types. |
-| `AddConsumer(Action<IConsumerBuilder> configure)` | Configures consume pipelines. |
-| `Build(IServiceCollection services)` | Builds all outbox pipelines and registers services. |
+### OutboxFlow.Postgres
+- [OutboxFlow.Postgres.ConsumerBuilderExtensions](#OutboxFlow-Postgres-ConsumerBuilderExtensions)
+- [OutboxFlow.Postgres.ConsumerOutboxStorageRegistrar](#OutboxFlow-Postgres-ConsumerOutboxStorageRegistrar)
+- [OutboxFlow.Postgres.DefaultDbConnectionFactory](#OutboxFlow-Postgres-DefaultDbConnectionFactory)
+- [OutboxFlow.Postgres.OutboxLock](#OutboxFlow-Postgres-OutboxLock)
+- [OutboxFlow.Postgres.OutboxLockManager](#OutboxFlow-Postgres-OutboxLockManager)
+- [OutboxFlow.Postgres.OutboxMessage](#OutboxFlow-Postgres-OutboxMessage)
+- [OutboxFlow.Postgres.OutboxStorage](#OutboxFlow-Postgres-OutboxStorage)
+- [OutboxFlow.Postgres.ProducerBuilderExtensions](#OutboxFlow-Postgres-ProducerBuilderExtensions)
+- [OutboxFlow.Postgres.ProducerOutboxStorageRegistrar](#OutboxFlow-Postgres-ProducerOutboxStorageRegistrar)
 
-```csharp
-services.AddOutbox(outbox =>
-    outbox
-        .AddProducer(producer => { /* ... */ })
-        .AddConsumer(consumer => { /* ... */ })
-);
-```
-
-## Producer Configuration
-
-### IProducerBuilder
-
-The producer builder is obtained inside the `AddProducer` callback.
+---
 
-| Property / Method | Description |
-|---|---|---|
-| `IOutboxStorageRegistrar? OutboxStorageRegistrar { get; set; }` | Storage registrar (set by `UsePostgres()` or a custom registrar). |
-| `ForMessage<T>(Action<IProducePipelineBuilder<T>> configure)` | Configures the produce pipeline for message type `T`. |
-| `Build(IServiceCollection services)` | Builds the producer and registers services. |
+# Configuration Reference
 
-### IProducePipelineBuilder&lt;T&gt;
+> Auto-generated from compiled assemblies. Run `scripts\generate-config-docs.ps1` to regenerate.
 
-A marker interface extending `IProducePipelineStepBuilder<T, T>`. It represents the start of a produce pipeline for a specific message type.
+## OutboxFlow
 
-```csharp
-producer.ForMessage<MyMessage>(pipeline =>
-    pipeline
-        .AddSyncStep<LoggingMiddleware, MyMessage>()
-        .SerializeWithJson()
-        .SetDestination("my-topic")
-        .Save()
-);
-```
+### OutboxFlow.Clock
 
-### IProducePipelineStepBuilder&lt;TIn, TOut&gt;
+- **Implements:** IClock
 
-Represents a step in the produce pipeline with input type `TIn` and output type `TOut`.
+#### Properties
 
-| Method | Return Type | Description |
-|---|---|---|
-| `AddSyncStep<TNext>(Func<TOut, IProduceContext, TNext> action)` | `IProducePipelineStepBuilder<TOut, TNext>` | Adds an inline synchronous step. |
-| `AddAsyncStep<TNext>(Func<TOut, IProduceContext, ValueTask<TNext>> action)` | `IProducePipelineStepBuilder<TOut, TNext>` | Adds an inline asynchronous step. |
+- **UtcNow** : `DateTime`
 
-### Produce Extension Methods
+#### Methods
 
-All methods in `ProducePipelineStepBuilderExtensions` (adds middleware, sets destination, saves).
+##### Delay
 
-| Method | Return Type | Parameters | Description |
-|---|---|---|---|
-| `AddSyncStep<TMiddleware, T>()` | `IProducePipelineStepBuilder<T, T>` | — | Adds a synchronous middleware (`IProduceSyncMiddleware<T, T>`) that preserves the message type. |
-| `AddSyncStep<TMiddleware, TIn, TOut>()` | `IProducePipelineStepBuilder<TOut, TOut>` | — | Adds a synchronous middleware that transforms `TIn` to `TOut`. |
-| `AddSyncStep<TMiddleware, TIn, TOut, TNext>()` | `IProducePipelineStepBuilder<TOut, TNext>` | — | Adds a synchronous middleware that transforms `TIn` → `TOut`, pipeline continues as `TOut` → `TNext`. |
-| `AddAsyncStep<TMiddleware, T>()` | `IProducePipelineStepBuilder<T, T>` | — | Adds an asynchronous middleware (`IProduceAsyncMiddleware<T, T>`) that preserves the message type. |
-| `AddAsyncStep<TMiddleware, TIn, TOut>()` | `IProducePipelineStepBuilder<TOut, TOut>` | — | Adds an asynchronous middleware that transforms `TIn` to `TOut`. |
-| `AddAsyncStep<TMiddleware, TIn, TOut, TNext>()` | `IProducePipelineStepBuilder<TOut, TNext>` | — | Adds an asynchronous middleware that transforms `TIn` → `TOut`, pipeline continues as `TOut` → `TNext`. |
-| `SetKey<TIn, TOut>(Func<TOut, byte[]> keyProvider)` | `IProducePipelineStepBuilder<TOut, TOut>` | `keyProvider`: a function that extracts the message key from the message. | Sets the message key. |
-| `SetDestination<TIn, TOut>(string destination)` | `IProducePipelineStepBuilder<TOut, TOut>` | `destination`: the topic or queue name. | Sets the message destination. |
-| `Save<TIn, TOut>()` | `IProducePipelineStepBuilder<TOut, TOut>` | — | Saves the message to the outbox storage. Must be the **last step** in the producer pipeline. |
+- **Return type:** `Task`
+- **Parameters:**
+  - `delay` (`TimeSpan`)
+  - `cancellationToken` (`CancellationToken`)
 
-### IProducer
 
-The `IProducer` interface is the entry point for producing outbox messages. Obtain it via DI after configuring the producer builder.
+### OutboxFlow.Consume.ConsumeContext
 
-| Method | Description |
-|---|---|
-| `ProduceAsync<T>(T message, IDbTransaction transaction, CancellationToken)` | Produces an outbox message. The configured pipeline (including `Save()` or `SaveBatch()`) runs synchronously within the provided transaction. For batch producing, pass `IReadOnlyCollection<TItem>` as `T` and configure the pipeline with `ForEach<TItem>()` + `SaveBatch()`. |
+- **Implements:** IConsumeContext
 
-## Consumer Configuration
+#### Properties
 
-### IConsumerBuilder
+- **CancellationToken** : `CancellationToken`
+- **ServiceProvider** : `IServiceProvider`
 
-The consumer builder is obtained inside the `AddConsumer` callback.
 
-| Property / Method | Description |
-|---|---|
-| `IOutboxStorageRegistrar? OutboxStorageRegistrar { get; set; }` | Storage registrar (set by `UsePostgres()` or a custom registrar). |
-| `int BatchSize { get; set; }` | Number of messages to consume per batch. |
-| `TimeSpan ConsumeDelay { get; set; }` | Delay between consume attempts. |
-| `IsolationLevel IsolationLevel { get; set; }` | Transaction isolation level. |
-| `TimeSpan Timeout { get; set; }` | Consume operation timeout. |
-| `SetDefaultRoute(Action<IConsumePipelineBuilder> configure)` | Configures the default consume pipeline for all destinations. |
-| `AddRoute(string destination, Action<IConsumePipelineBuilder> configure)` | Configures a destination-specific consume pipeline. |
-| `Build(IServiceCollection services)` | Builds the consumer and registers services. |
+### OutboxFlow.Consume.Configuration.ConsumePipelineBuilder
 
-### Consumer Builder Extension Methods
+- **Implements:** IConsumePipelineBuilder, IConsumePipelineStepBuilder`2, IPipelineStepBuilder`2
 
-From `ConsumerBuilderExtensions`:
+#### Methods
 
-| Method | Return Type | Parameters | Description |
-|---|---|---|---|
-| `SetOutboxStorageRegistrar` | `IConsumerBuilder` | `IOutboxStorageRegistrar registrar` | Sets the outbox storage registrar. |
-| `SetBatchSize` | `IConsumerBuilder` | `int batchSize` | Sets the amount of messages to consume per batch. |
-| `SetConsumeDelay` | `IConsumerBuilder` | `TimeSpan consumeDelay` | Sets the delay between each consume attempt. |
-| `SetIsolationLevel` | `IConsumerBuilder` | `IsolationLevel isolationLevel` | Sets the transaction isolation level. |
-| `SetTimeout` | `IConsumerBuilder` | `TimeSpan timeout` | Sets the consume operation timeout. |
+##### AddAsyncStep
 
-### IConsumePipelineBuilder
+- **Return type:** `IConsumePipelineStepBuilder<IOutboxMessage, TOut>`
+- **Parameters:**
+  - `action` (`Func<IOutboxMessage, IConsumeContext, ValueTask<TOut>>`)
 
-A marker interface extending `IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage>`. Represents the start of a consume pipeline.
+##### AddSyncStep
 
-```csharp
-consumer
-    .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
-    .AddRoute("specific-topic", pipeline =>
-        pipeline
-            .AddSyncStep<MyCustomMiddleware, IOutboxMessage, IOutboxMessage>()
-            .SendToKafka(producerConfig)
-    );
-```
+- **Return type:** `IConsumePipelineStepBuilder<IOutboxMessage, TOut>`
+- **Parameters:**
+  - `action` (`Func<IOutboxMessage, IConsumeContext, TOut>`)
 
-### IConsumePipelineStepBuilder&lt;TIn, TOut&gt;
+##### Build
 
-Represents a step in the consume pipeline with input type `TIn` and output type `TOut`.
+- **Return type:** `IPipelineStep<IConsumeContext, IOutboxMessage>`
+- **Parameters:** none
 
-| Method | Return Type | Description |
-|---|---|---|
-| `AddSyncStep<TNext>(Func<TOut, IConsumeContext, TNext> action)` | `IConsumePipelineStepBuilder<TOut, TNext>` | Adds an inline synchronous step. |
-| `AddAsyncStep<TNext>(Func<TOut, IConsumeContext, ValueTask<TNext>> action)` | `IConsumePipelineStepBuilder<TOut, TNext>` | Adds an inline asynchronous step. |
 
-### Consume Extension Methods
+### OutboxFlow.Consume.ConsumePipelineRegistry
 
-From `ConsumePipelineStepBuilderExtensions`:
+- **Implements:** IConsumePipelineRegistry
 
-| Method | Return Type | Parameters | Description |
-|---|---|---|---|
-| `AddSyncStep<TMiddleware, TIn, TOut>()` | `IConsumePipelineStepBuilder<TOut, TOut>` | — | Adds a synchronous middleware that transforms `TIn` → `TOut`. |
-| `AddSyncStep<TMiddleware, TIn, TOut, TNext>()` | `IConsumePipelineStepBuilder<TOut, TNext>` | — | Adds a synchronous middleware, pipeline continues as `TOut` → `TNext`. |
-| `AddAsyncStep<TMiddleware, TIn, TOut>()` | `IConsumePipelineStepBuilder<TOut, TOut>` | — | Adds an asynchronous middleware that transforms `TIn` → `TOut`. |
-| `AddAsyncStep<TMiddleware, TIn, TOut, TNext>()` | `IConsumePipelineStepBuilder<TOut, TNext>` | — | Adds an asynchronous middleware, pipeline continues as `TOut` → `TNext`. |
+#### Methods
 
-## Postgres Extensions
+##### GetPipeline
 
-### Producer
+- **Return type:** `IPipelineStep<IConsumeContext, IOutboxMessage>`
+- **Parameters:**
+  - `destination` (`String`)
 
-```csharp
-public static IProducerBuilder UsePostgres(this IProducerBuilder builder)
-```
+##### GetPipeline
 
-Configures the producer to use PostgreSQL-based outbox storage. Call this before `ForMessage<T>()`.
+- **Return type:** `IPipelineStep<IConsumeContext, IOutboxMessage>`
+- **Parameters:** none
 
-### Consumer
 
-```csharp
-public static IConsumerBuilder UsePostgres(this IConsumerBuilder builder, string connectionString)
-```
+### OutboxFlow.Consume.Configuration.ConsumePipelineStepBuilder`2
 
-Configures the consumer to use PostgreSQL-based outbox storage with the given connection string.
+- **Implements:** IConsumePipelineStepBuilder`2, IPipelineStepBuilder`2
+- **Description:** Outbox consume pipeline step builder.
 
-### Example
+#### Methods
 
-```csharp
-outbox
-    .AddProducer(producer => producer
-        .UsePostgres()
-        .ForMessage<MyMessage>(pipeline => /* ... */)
-    )
-    .AddConsumer(consumer => consumer
-        .UsePostgres(connectionString)
-        .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
-    );
-```
+##### AddAsyncStep
 
-## Kafka Extensions
+- **Return type:** `IConsumePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `action` (`Func<TOut, IConsumeContext, ValueTask<TNext>>`)
 
-### Service Registration
+##### AddSyncStep
 
-```csharp
-public static IServiceCollection AddKafka(this IServiceCollection services)
-```
+- **Return type:** `IConsumePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `action` (`Func<TOut, IConsumeContext, TNext>`)
 
-Registers Apache Kafka dependencies (required before `AddOutbox`).
+##### Build
 
-### Send to Kafka
+- **Return type:** `IPipelineStep<IConsumeContext, TIn>`
+- **Parameters:** none
 
-From `ConsumePipelineStepBuilderExtensions` (Kafka):
 
-| Method | Return Type | Parameters | Description |
-|---|---|---|---|
-| `SendToKafka<TIn>()` | `IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage>` | `ProducerConfig producerConfig` | Sends the message to Kafka using `DefaultKafkaProducerBuilder`. |
-| `SendToKafka<TIn, TKafkaProducerBuilder>()` | `IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage>` | `ProducerConfig producerConfig` | Sends the message to Kafka using a custom `IKafkaProducerBuilder` implementation. |
+### OutboxFlow.Consume.Configuration.ConsumerBuilder
 
-### Example
+- **Implements:** IConsumerBuilder
 
-```csharp
-// Default producer builder
-pipeline.SendToKafka(producerConfig);
+#### Properties
 
-// Custom producer builder
-pipeline.SendToKafka<MyProducerBuilder>(producerConfig);
-```
+- **BatchSize** : `Int32`
+- **ConsumeDelay** : `TimeSpan`
+- **IsolationLevel** : `IsolationLevel`
+- **OutboxStorageRegistrar** : `IOutboxStorageRegistrar`
+- **Timeout** : `TimeSpan`
 
-## Serialization Extensions
+#### Methods
 
-All serialization extension methods are in the `ProducePipelineStepBuilderExtensions` partial class. They are called on the produce pipeline.
+##### AddRoute
 
-### Generic Serializer
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `destination` (`String`)
+  - `configure` (`Action<IConsumePipelineBuilder>`)
 
-| Method | Return Type | Parameters | Constraints | Description |
-|---|---|---|---|---|
-| `Serialize<TSerializer, TIn, TOut>()` | `IProducePipelineStepBuilder<TOut, TOut>` | — | `TSerializer : ISerializer<byte[]>` | Serialize a message using the specified serializer type. |
-| `SerializeKey<TSerializer, TIn, TOut, TKey>()` | `IProducePipelineStepBuilder<TOut, TOut>` | `Func<TOut, TKey> keyProvider` | `TSerializer : ISerializer<byte[]>` | Serialize a message key using the specified serializer type. |
+##### Build
 
-### JSON Serializer
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
 
-| Method | Return Type | Parameters | Description |
-|---|---|---|---|
-| `SerializeWithJson<TIn, TOut>()` | `IProducePipelineStepBuilder<TOut, TOut>` | — | Serialize message to JSON (UTF-8 bytes). |
-| `SerializeKeyWithJson<TIn, TOut, TKey>()` | `IProducePipelineStepBuilder<TOut, TOut>` | `Func<TOut, TKey> keyProvider` | Serialize message key to JSON (UTF-8 bytes). |
+##### SetDefaultRoute
 
-### Protobuf Serializer
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `configure` (`Action<IConsumePipelineBuilder>`)
 
-| Method | Return Type | Parameters | Constraints | Description |
-|---|---|---|---|---|
-| `SerializeWithProtobuf<TIn, TOut>()` | `IProducePipelineStepBuilder<TOut, TOut>` | — | `TOut : IMessage` | Serialize message to protobuf bytes. |
-| `SerializeKeyWithProtobuf<TIn, TOut, TKey>()` | `IProducePipelineStepBuilder<TOut, TOut>` | `Func<TOut, TKey> keyProvider` | `TKey : IMessage` | Serialize message key to protobuf bytes. |
 
-### Example
+### OutboxFlow.Middleware.IAsyncMiddleware`3
 
-```csharp
-pipeline
-    // JSON
-    .SerializeWithJson()
+- **Description:** Represents an asynchronous middleware.
 
-    // Protobuf (requires Google.Protobuf)
-    .SerializeWithProtobuf()
+#### Methods
 
-    // Custom serializer
-    .Serialize<MyMessagePackSerializer, MyModel, byte[]>()
+##### RunAsync
 
-    // Key serialization
-    .SerializeKeyWithJson(message => message.Id)
-    .SerializeWithProtobuf();
-```
+- **Return type:** `ValueTask<TOut>`
+- **Parameters:**
+  - `message` (`TIn`)
+  - `context` (`TContext`)
+- **Description:** Runs a middleware.
 
-## Pipeline Step Builder
 
-### IPipelineStepBuilder&lt;TContext, TIn&gt;
+### OutboxFlow.IClock
 
-The base interface for all step builders.
+- **Description:** Provides date and time functions.
 
-| Method | Description |
-|---|---|
-| `IPipelineStep<TContext, TIn> Build()` | Builds the pipeline step. Called internally during pipeline construction. |
+#### Properties
+
+- **UtcNow** : `DateTime` — Gets the current date and time.
+
+#### Methods
+
+##### Delay
+
+- **Return type:** `Task`
+- **Parameters:**
+  - `delay` (`TimeSpan`)
+  - `cancellationToken` (`CancellationToken`)
+
+
+### OutboxFlow.Consume.IConsumeAsyncMiddleware`2
+
+- **Implements:** IAsyncMiddleware`3
+- **Description:** Represents a consume middleware.
+
+
+### OutboxFlow.Consume.IConsumeContext
+
+- **Description:** Context for the outbox consume operation.
+
+#### Properties
+
+- **CancellationToken** : `CancellationToken` — Gets the cancellation token.
+- **ServiceProvider** : `IServiceProvider` — Gets the service provider.
+
+
+### OutboxFlow.Consume.Configuration.IConsumePipelineBuilder
+
+- **Implements:** IConsumePipelineStepBuilder`2, IPipelineStepBuilder`2
+- **Description:** Represents a consume pipeline builder.
+
+
+### OutboxFlow.Consume.IConsumePipelineRegistry
+
+- **Description:** Consume pipeline registry.
+
+#### Methods
+
+##### GetPipeline
+
+- **Return type:** `IPipelineStep<IConsumeContext, IOutboxMessage>`
+- **Parameters:**
+  - `destination` (`String`)
+- **Description:** Gets a consume pipeline for the specified destination.
+
+##### GetPipeline
+
+- **Return type:** `IPipelineStep<IConsumeContext, IOutboxMessage>`
+- **Parameters:** none
+- **Description:** Gets a consume pipeline for the specified destination.
+
+
+### OutboxFlow.Consume.Configuration.IConsumePipelineStepBuilder`2
+
+- **Implements:** IPipelineStepBuilder`2
+- **Description:** Represents a consume pipeline step builder.
+
+#### Methods
+
+##### AddAsyncStep
+
+- **Return type:** `IConsumePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `action` (`Func<TOut, IConsumeContext, ValueTask<TNext>>`)
+- **Description:** Adds an asynchronous step to the pipeline.
+
+##### AddSyncStep
+
+- **Return type:** `IConsumePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `action` (`Func<TOut, IConsumeContext, TNext>`)
+- **Description:** Adds a synchronous step to the pipeline.
+
+
+### OutboxFlow.Consume.Configuration.IConsumerBuilder
+
+- **Description:** Builds an outbox consumer.
+
+#### Properties
+
+- **BatchSize** : `Int32` — Gets or sets the amount of messages to consume.
+- **ConsumeDelay** : `TimeSpan` — Gets or sets the delay between each attempt to consume messages.
+- **IsolationLevel** : `IsolationLevel` — Gets or sets the transaction isolation level.
+- **OutboxStorageRegistrar** : `IOutboxStorageRegistrar` — Gets or sets the registrar to register an outbox storage.
+- **Timeout** : `TimeSpan` — Gets or sets the consume operation timeout.
+
+#### Methods
+
+##### AddRoute
+
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `destination` (`String`)
+  - `configure` (`Action<IConsumePipelineBuilder>`)
+- **Description:** Configures consume pipeline for the specified destination.
+
+##### Build
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+- **Description:** Builds an outbox consumer.
+
+##### SetDefaultRoute
+
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `configure` (`Action<IConsumePipelineBuilder>`)
+- **Description:** Configures the default consume pipeline.
+
+
+### OutboxFlow.Consume.IConsumeSyncMiddleware`2
+
+- **Implements:** ISyncMiddleware`3
+- **Description:** Represents an asynchronous synchronous consume middleware.
+
+
+### OutboxFlow.Storage.IDbConnectionFactory
+
+
+#### Methods
+
+##### Create
+
+- **Return type:** `IDbConnection`
+- **Parameters:** none
+
+
+### OutboxFlow.Configuration.IOutboxBuilder
+
+- **Description:** Builds outbox pipelines.
+
+#### Methods
+
+##### AddConsumer
+
+- **Return type:** `IOutboxBuilder`
+- **Parameters:**
+  - `configure` (`Action<IConsumerBuilder>`)
+- **Description:** Configures outbox consume pipelines.
+
+##### AddProducer
+
+- **Return type:** `IOutboxBuilder`
+- **Parameters:**
+  - `configure` (`Action<IProducerBuilder>`)
+- **Description:** Configures outbox produce pipelines.
+
+##### Build
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+- **Description:** Builds outbox pipelines.
+
+
+### OutboxFlow.Consume.IOutboxConsumer
+
+- **Description:** Consumes stored outbox messages.
+
+#### Methods
+
+##### ConsumeAsync
+
+- **Return type:** `ValueTask<OutboxConsumeResult>`
+- **Parameters:**
+  - `cancellationToken` (`CancellationToken`)
+- **Description:** Consumes stored outbox messages.
+
+
+### OutboxFlow.Storage.IOutboxLock
+
+- **Description:** Outbox lock.
+
+#### Properties
+
+- **ExpireAt** : `DateTime` — Gets the lock expiration date and time.
+- **Id** : `Guid` — Gets the lock ID.
+
+
+### OutboxFlow.Storage.IOutboxLockManager
+
+- **Description:** Outbox lock manager.
+
+#### Methods
+
+##### LockAsync
+
+- **Return type:** `ValueTask<IOutboxLock>`
+- **Parameters:**
+  - `lockTimeout` (`TimeSpan`)
+  - `cancellationToken` (`CancellationToken`)
+- **Description:** Locks the outbox.
+
+##### ReleaseAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `outboxLock` (`IOutboxLock`)
+  - `cancellationToken` (`CancellationToken`)
+- **Description:** Releases the outbox lock.
+
+
+### OutboxFlow.Storage.IOutboxMessage
+
+- **Description:** Outbox message.
+
+#### Properties
+
+- **Destination** : `String` — Gets the destination.
+- **Headers** : `IDictionary<String, String>` — Gets the message headers.
+- **Key** : `Byte[]` — Gets the message key.
+- **Value** : `Byte[]` — Gets the message value.
+
+
+### OutboxFlow.Storage.IOutboxStorage
+
+- **Description:** Outbox message storage.
+
+#### Methods
+
+##### DeleteAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `outboxMessages` (`IReadOnlyCollection<IOutboxMessage>`)
+  - `cancellationToken` (`CancellationToken`)
+- **Description:** Deletes outbox messages from the storage.
+
+##### FetchAsync
+
+- **Return type:** `ValueTask<IReadOnlyCollection<IOutboxMessage>>`
+- **Parameters:**
+  - `batchSize` (`Int32`)
+  - `cancellationToken` (`CancellationToken`)
+- **Description:** Fetches outbox messages from the storage.
+
+##### SaveAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `context` (`IProduceContext`)
+- **Description:** Saves an outbox message to the storage.
+
+##### SaveBatchAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `contexts` (`IReadOnlyCollection<IProduceContext>`)
+- **Description:** Saves multiple outbox messages to the storage in a single operation.
+
+
+### OutboxFlow.Storage.Configuration.IOutboxStorageRegistrar
+
+- **Description:** Registers an outbox storage.
+
+#### Methods
+
+##### Register
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+- **Description:** Registers an outbox storage.
+
+
+### OutboxFlow.IPipelineStep`2
+
+- **Description:** Represents a pipeline step.
+
+#### Methods
+
+##### RunAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `message` (`T`)
+  - `context` (`TContext`)
+- **Description:** Runs a pipeline step.
+
+
+### OutboxFlow.Configuration.IPipelineStepBuilder`2
+
+- **Description:** Represents a pipeline step builder.
+
+#### Methods
+
+##### Build
+
+- **Return type:** `IPipelineStep<TContext, TIn>`
+- **Parameters:** none
+- **Description:** Builds a produce pipeline step.
+
+
+### OutboxFlow.Produce.IProduceAsyncMiddleware`2
+
+- **Implements:** IAsyncMiddleware`3
+- **Description:** Represents an asynchronous produce middleware.
+
+
+### OutboxFlow.Produce.IProduceContext
+
+- **Description:** Context for the outbox produce operation.
+
+#### Properties
+
+- **CancellationToken** : `CancellationToken` — Gets the cancellation token.
+- **Destination** : `String` — Gets or sets the destination.
+- **Headers** : `IDictionary<String, String>` — Gets the message headers.
+- **Key** : `Byte[]` — Gets or sets the message key.
+- **ServiceProvider** : `IServiceProvider` — Gets the service provider.
+- **Value** : `Byte[]` — Gets or sets the message value.
+
+
+### OutboxFlow.Produce.Configuration.IProducePipelineBuilder`1
+
+- **Implements:** IProducePipelineStepBuilder`2, IPipelineStepBuilder`2
+- **Description:** Outbox produce pipeline builder.
+
+
+### OutboxFlow.Produce.IProducePipelineRegistry
+
+- **Description:** Produce pipeline registry.
+
+#### Methods
+
+##### GetPipeline
+
+- **Return type:** `IPipelineStep<IProduceContext, T>`
+- **Parameters:** none
+- **Description:** Gets the pipeline by the message type.
+
+
+### OutboxFlow.Produce.Configuration.IProducePipelineStepBuilder`2
+
+- **Implements:** IPipelineStepBuilder`2
+- **Description:** Represents a produce pipeline step builder.
+
+#### Methods
+
+##### AddAsyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `action` (`Func<TOut, IProduceContext, ValueTask<TNext>>`)
+- **Description:** Adds an asynchronous step to the pipeline.
+
+##### AddSyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `action` (`Func<TOut, IProduceContext, TNext>`)
+- **Description:** Adds a synchronous step to the pipeline.
+
+
+### OutboxFlow.Produce.IProducer
+
+- **Description:** Produces an outbox message.
+
+#### Methods
+
+##### ProduceAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `message` (`T`)
+  - `cancellationToken` (`CancellationToken`)
+- **Description:** Produces an outbox message.
+
+
+### OutboxFlow.Produce.Configuration.IProducerBuilder
+
+- **Description:** Builds an outbox producer.
+
+#### Properties
+
+- **OutboxStorageRegistrar** : `IOutboxStorageRegistrar` — Gets or sets the registrar to register an outbox storage.
+
+#### Methods
+
+##### Build
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+- **Description:** Builds an outbox producer.
+
+##### ForMessage
+
+- **Return type:** `IProducerBuilder`
+- **Parameters:**
+  - `configure` (`Action<IProducePipelineBuilder<T>>`)
+- **Description:** Configures produce pipeline for the specified message type.
+
+
+### OutboxFlow.Produce.IProduceSyncMiddleware`2
+
+- **Implements:** ISyncMiddleware`3
+- **Description:** Represents a synchronous produce middleware.
+
+
+### OutboxFlow.Serialization.ISerializer`1
+
+- **Description:** Serializes values.
+
+#### Methods
+
+##### Serialize
+
+- **Return type:** `T`
+- **Parameters:**
+  - `value` (`TValue`)
+- **Description:** Serializes the specified value.
+
+
+### OutboxFlow.Middleware.ISyncMiddleware`3
+
+- **Description:** Represents a synchronous middleware.
+
+#### Methods
+
+##### Run
+
+- **Return type:** `TOut`
+- **Parameters:**
+  - `message` (`TIn`)
+  - `context` (`TContext`)
+- **Description:** Runs a middleware.
+
+
+### OutboxFlow.Serialization.JsonSerializer
+
+- **Implements:** ISerializer`1
+- **Description:** Serializes values to a JSON string, encoded as UTF-8 bytes.
+
+#### Methods
+
+##### Serialize
+
+- **Return type:** `Byte[]`
+- **Parameters:**
+  - `value` (`TValue`)
+- **Description:** Serializes the specified value to a JSON string, encoded as UTF-8 bytes.
+
+
+### OutboxFlow.Configuration.OutboxBuilder
+
+- **Implements:** IOutboxBuilder
+
+#### Methods
+
+##### AddConsumer
+
+- **Return type:** `IOutboxBuilder`
+- **Parameters:**
+  - `configure` (`Action<IConsumerBuilder>`)
+
+##### AddProducer
+
+- **Return type:** `IOutboxBuilder`
+- **Parameters:**
+  - `configure` (`Action<IProducerBuilder>`)
+
+##### Build
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+
+
+### OutboxFlow.Consume.OutboxConsumer
+
+- **Implements:** IOutboxConsumer
+
+#### Methods
+
+##### ConsumeAsync
+
+- **Return type:** `ValueTask<OutboxConsumeResult>`
+- **Parameters:**
+  - `cancellationToken` (`CancellationToken`)
+
+
+### OutboxFlow.Consume.OutboxConsumeResult
+
+- **Implements:** IEquatable`1
+- **Description:** Contains result of consume operation.
+
+#### Properties
+
+- **Count** : `Int32` — The amount of consumed messages, if messages were successfully consumed.
+- **IsSuccessful** : `Boolean`
+
+
+### OutboxFlow.Consume.OutboxConsumerService
+
+- **Base type:** `Microsoft.Extensions.Hosting.BackgroundService`
+- **Implements:** IHostedService
+- **Description:** Background service which consumes stored outbox messages.
+
+#### Properties
+
+- **ExecuteTask** : `Task`
+
+#### Methods
+
+##### Dispose
+
+- **Return type:** `Void`
+- **Parameters:** none
+
+##### StartAsync
+
+- **Return type:** `Task`
+- **Parameters:**
+  - `cancellationToken` (`CancellationToken`)
+
+##### StopAsync
+
+- **Return type:** `Task`
+- **Parameters:**
+  - `cancellationToken` (`CancellationToken`)
+
+
+### OutboxFlow.Storage.Configuration.OutboxStorageConsumerOptions
+
+
+#### Properties
+
+- **BatchSize** : `Int32` — Gets or sets the amount of messages to consume.
+- **ConsumeDelay** : `TimeSpan` — Gets or sets the delay between each attempt to consume messages.
+- **IsolationLevel** : `IsolationLevel` — Gets or sets the transaction isolation level.
+- **Timeout** : `TimeSpan` — Get or sets the consume operation timeout.
+
+
+### OutboxFlow.Pipeline`2
+
+- **Implements:** IPipelineStep`2
+- **Description:** Outbox pipeline.
+
+#### Methods
+
+##### RunAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `message` (`T`)
+  - `context` (`TContext`)
+
+
+### OutboxFlow.PipelineStep`3
+
+- **Implements:** IPipelineStep`2
+- **Description:** Outbox pipeline step.
+
+#### Methods
+
+##### RunAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `message` (`TIn`)
+  - `context` (`TContext`)
+
+
+### OutboxFlow.Produce.ProduceContext
+
+- **Implements:** IProduceContext
+
+#### Properties
+
+- **CancellationToken** : `CancellationToken`
+- **Destination** : `String`
+- **Headers** : `IDictionary<String, String>`
+- **Key** : `Byte[]`
+- **ServiceProvider** : `IServiceProvider`
+- **Value** : `Byte[]`
+
+
+### OutboxFlow.Produce.Configuration.ProducePipelineBuilder`1
+
+- **Implements:** IProducePipelineBuilder`1, IProducePipelineStepBuilder`2, IPipelineStepBuilder`2
+
+#### Methods
+
+##### AddAsyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<T, TOut>`
+- **Parameters:**
+  - `action` (`Func<T, IProduceContext, ValueTask<TOut>>`)
+
+##### AddSyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<T, TOut>`
+- **Parameters:**
+  - `action` (`Func<T, IProduceContext, TOut>`)
+
+##### Build
+
+- **Return type:** `IPipelineStep<IProduceContext, T>`
+- **Parameters:** none
+
+
+### OutboxFlow.Produce.ProducePipelineRegistry
+
+- **Implements:** IProducePipelineRegistry
+
+#### Methods
+
+##### GetPipeline
+
+- **Return type:** `IPipelineStep<IProduceContext, T>`
+- **Parameters:** none
+
+
+### OutboxFlow.Produce.Configuration.ProducePipelineStepBuilder`2
+
+- **Implements:** IProducePipelineStepBuilder`2, IPipelineStepBuilder`2
+- **Description:** Outbox produce pipeline step builder.
+
+#### Methods
+
+##### AddAsyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `action` (`Func<TOut, IProduceContext, ValueTask<TNext>>`)
+- **Description:** Adds a step to the pipeline.
+
+##### AddSyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `action` (`Func<TOut, IProduceContext, TNext>`)
+- **Description:** Adds a synchronous step to the pipeline.
+
+##### Build
+
+- **Return type:** `IPipelineStep<IProduceContext, TIn>`
+- **Parameters:** none
+
+
+### OutboxFlow.Produce.Producer
+
+- **Implements:** IProducer
+
+#### Methods
+
+##### ProduceAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `message` (`T`)
+  - `cancellationToken` (`CancellationToken`)
+
+
+### OutboxFlow.Produce.Configuration.ProducerBuilder
+
+- **Implements:** IProducerBuilder
+
+#### Properties
+
+- **OutboxStorageRegistrar** : `IOutboxStorageRegistrar`
+
+#### Methods
+
+##### Build
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+
+##### ForMessage
+
+- **Return type:** `IProducerBuilder`
+- **Parameters:**
+  - `configure` (`Action<IProducePipelineBuilder<T>>`)
+
+
+### Extension Methods
+
+#### AddAsyncStep
+
+- **Return type:** `IConsumePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IConsumePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Adds an asynchronous middleware to the pipeline.
+
+#### AddAsyncStep
+
+- **Return type:** `IConsumePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `step` (`IConsumePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Adds an asynchronous middleware to the pipeline.
+
+#### AddSyncStep
+
+- **Return type:** `IConsumePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IConsumePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Adds a synchronous middleware to the pipeline.
+
+#### AddSyncStep
+
+- **Return type:** `IConsumePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `step` (`IConsumePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Adds a synchronous middleware to the pipeline.
+
+#### SetBatchSize
+
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `consumerBuilder` (`IConsumerBuilder`)
+  - `batchSize` (`Int32`)
+- **Description:** Sets the amount of messages to consume.
+
+#### SetConsumeDelay
+
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `consumerBuilder` (`IConsumerBuilder`)
+  - `consumeDelay` (`TimeSpan`)
+- **Description:** Sets the delay between each attempt to consume messages.
+
+#### SetIsolationLevel
+
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `consumerBuilder` (`IConsumerBuilder`)
+  - `isolationLevel` (`IsolationLevel`)
+- **Description:** Sets the transaction isolation level.
+
+#### SetOutboxStorageRegistrar
+
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `consumerBuilder` (`IConsumerBuilder`)
+  - `registrar` (`IOutboxStorageRegistrar`)
+- **Description:** Sets the registrar to register an outbox storage.
+
+#### SetTimeout
+
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `consumerBuilder` (`IConsumerBuilder`)
+  - `timeout` (`TimeSpan`)
+- **Description:** Sets the consume operation timeout.
+
+#### AddAsyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<T, T>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<T, T>`)
+- **Description:** Adds an asynchronous middleware to the pipeline.
+
+#### AddAsyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Adds an asynchronous middleware to the pipeline.
+
+#### AddAsyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Adds an asynchronous middleware to the pipeline.
+
+#### AddSyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<T, T>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<T, T>`)
+- **Description:** Adds a synchronous middleware to the pipeline.
+
+#### AddSyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Adds a synchronous middleware to the pipeline.
+
+#### AddSyncStep
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TNext>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Adds a synchronous middleware to the pipeline.
+
+#### ForEach
+
+- **Return type:** `IProducePipelineStepBuilder<IReadOnlyCollection<TItem>, IReadOnlyCollection<IProduceContext>>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<IReadOnlyCollection<TItem>, IReadOnlyCollection<TItem>>`)
+  - `configure` (`Action<IProducePipelineBuilder<TItem>>`)
+- **Description:** Iterates over each item in the collection, runs the configured sub-pipeline for each,
+            and collects the resulting produce contexts.
+
+#### Save
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Saves the message to the outbox storage.
+
+#### SaveBatch
+
+- **Return type:** `IProducePipelineStepBuilder<IReadOnlyCollection<IProduceContext>, IReadOnlyCollection<IProduceContext>>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<IReadOnlyCollection<TSource>, IReadOnlyCollection<IProduceContext>>`)
+- **Description:** Saves all collected produce contexts to the outbox storage in a single batch operation.
+
+#### SetDestination
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+  - `destination` (`String`)
+- **Description:** Sets the message destination.
+
+#### SetKey
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+  - `keyProvider` (`Func<TOut, Byte[]>`)
+- **Description:** Sets the message key.
+
+#### Serialize
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Serialize a message by using the specified serializer.
+
+#### SerializeKey
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+  - `keyProvider` (`Func<TOut, TKey>`)
+- **Description:** Serialize a message key by using the specified serializer.
+
+#### SerializeKeyWithJson
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+  - `keyProvider` (`Func<TOut, TKey>`)
+- **Description:** Serialize a message key to a JSON string, encoded as UTF-8 bytes.
+
+#### SerializeKeyWithProtobuf
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+  - `keyProvider` (`Func<TOut, TKey>`)
+- **Description:** Serialize a message key to a byte array in protobuf encoding.
+
+#### SerializeWithJson
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Serialize a message to a JSON string, encoded as UTF-8 bytes.
+
+#### SerializeWithProtobuf
+
+- **Return type:** `IProducePipelineStepBuilder<TOut, TOut>`
+- **Parameters:**
+  - `step` (`IProducePipelineStepBuilder<TIn, TOut>`)
+- **Description:** Serialize a message to a byte array in protobuf encoding.
+
+#### AddOutbox
+
+- **Return type:** `IServiceCollection`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+  - `configure` (`Action<IOutboxBuilder>`)
+- **Description:** Registers the outbox dependencies.
+
+## OutboxFlow.Postgres
+
+### OutboxFlow.Postgres.ConsumerOutboxStorageRegistrar
+
+- **Implements:** IOutboxStorageRegistrar
+- **Description:** Registers an outbox storage based on PostgreSQL.
+
+#### Methods
+
+##### Register
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+- **Description:** Registers an outbox storage based on PostgreSQL.
+
+
+### OutboxFlow.Postgres.DefaultDbConnectionFactory
+
+- **Implements:** IDbConnectionFactory
+
+#### Methods
+
+##### Create
+
+- **Return type:** `IDbConnection`
+- **Parameters:** none
+
+
+### OutboxFlow.Postgres.OutboxLock
+
+- **Implements:** IOutboxLock, IEquatable`1
+- **Description:** Represents an outbox lock.
+
+#### Properties
+
+- **ExpireAt** : `DateTime` — Expiration date and time.
+- **Id** : `Guid` — Lock ID.
+
+
+### OutboxFlow.Postgres.OutboxLockManager
+
+- **Implements:** IOutboxLockManager
+- **Description:** Outbox lock manager which uses PostgreSQL as an underlying storage.
+
+#### Methods
+
+##### LockAsync
+
+- **Return type:** `ValueTask<IOutboxLock>`
+- **Parameters:**
+  - `lockTimeout` (`TimeSpan`)
+  - `cancellationToken` (`CancellationToken`)
+
+##### ReleaseAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `outboxLock` (`IOutboxLock`)
+  - `cancellationToken` (`CancellationToken`)
+
+
+### OutboxFlow.Postgres.OutboxMessage
+
+- **Implements:** IOutboxMessage
+
+#### Properties
+
+- **Destination** : `String`
+- **Headers** : `IDictionary<String, String>`
+- **Id** : `Int64` — Gets the message ID.
+- **Key** : `Byte[]`
+- **Value** : `Byte[]`
+
+
+### OutboxFlow.Postgres.OutboxStorage
+
+- **Implements:** IOutboxStorage
+- **Description:** Outbox message storage which uses PostgreSQL as an underlying storage.
+
+#### Methods
+
+##### DeleteAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `outboxMessages` (`IReadOnlyCollection<IOutboxMessage>`)
+  - `cancellationToken` (`CancellationToken`)
+
+##### FetchAsync
+
+- **Return type:** `ValueTask<IReadOnlyCollection<IOutboxMessage>>`
+- **Parameters:**
+  - `batchSize` (`Int32`)
+  - `cancellationToken` (`CancellationToken`)
+
+##### SaveAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `context` (`IProduceContext`)
+
+##### SaveBatchAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:**
+  - `contexts` (`IReadOnlyCollection<IProduceContext>`)
+
+
+### OutboxFlow.Postgres.ProducerOutboxStorageRegistrar
+
+- **Implements:** IOutboxStorageRegistrar
+- **Description:** Registers an outbox storage based on PostgreSQL.
+
+#### Methods
+
+##### Register
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+- **Description:** Registers an outbox storage based on PostgreSQL.
+
+
+### Extension Methods
+
+#### UsePostgres
+
+- **Return type:** `IConsumerBuilder`
+- **Parameters:**
+  - `builder` (`IConsumerBuilder`)
+  - `connectionString` (`String`)
+- **Description:** Configures the consumer to use an outbox storage based on PostgreSQL.
+
+#### UsePostgres
+
+- **Return type:** `IProducerBuilder`
+- **Parameters:**
+  - `builder` (`IProducerBuilder`)
+  - `connectionString` (`String`)
+- **Description:** Configures the producer to use an outbox storage based on PostgreSQL.
+
+## OutboxFlow.Kafka
+
+### OutboxFlow.Kafka.DefaultKafkaProducerBuilder
+
+- **Implements:** IKafkaProducerBuilder
+
+#### Methods
+
+##### Create
+
+- **Return type:** `IProducer<Byte[], Byte[]>`
+- **Parameters:**
+  - `producerConfig` (`ProducerConfig`)
+
+
+### OutboxFlow.Kafka.IKafkaProducerBuilder
+
+- **Description:** Kafka producer builder.
+
+#### Methods
+
+##### Create
+
+- **Return type:** `IProducer<Byte[], Byte[]>`
+- **Parameters:**
+  - `producerConfig` (`ProducerConfig`)
+- **Description:** Creates the Kafka producer for the specified configuration.
+
+
+### OutboxFlow.Kafka.IKafkaProducerRegistry
+
+- **Description:** Kafka producer registry.
+
+#### Methods
+
+##### GetOrCreate
+
+- **Return type:** `IProducer<Byte[], Byte[]>`
+- **Parameters:**
+  - `producerBuilder` (`IKafkaProducerBuilder`)
+  - `producerConfig` (`ProducerConfig`)
+- **Description:** Gets or creates the Kafka producer for the specified configuration.
+
+##### Remove
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `producerConfig` (`ProducerConfig`)
+- **Description:** Removes the Kafka producer for the specified configuration.
+
+
+### OutboxFlow.Kafka.KafkaProducerRegistry
+
+- **Implements:** IKafkaProducerRegistry
+
+#### Methods
+
+##### Dispose
+
+- **Return type:** `Void`
+- **Parameters:** none
+
+##### DisposeAsync
+
+- **Return type:** `ValueTask`
+- **Parameters:** none
+
+##### GetOrCreate
+
+- **Return type:** `IProducer<Byte[], Byte[]>`
+- **Parameters:**
+  - `producerBuilder` (`IKafkaProducerBuilder`)
+  - `producerConfig` (`ProducerConfig`)
+
+##### Remove
+
+- **Return type:** `Void`
+- **Parameters:**
+  - `producerConfig` (`ProducerConfig`)
+
+
+### Extension Methods
+
+#### SendToKafka
+
+- **Return type:** `IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage>`
+- **Parameters:**
+  - `pipeline` (`IConsumePipelineStepBuilder<TIn, IOutboxMessage>`)
+  - `producerConfig` (`ProducerConfig`)
+- **Description:** Sends the message to the Kafka topic.
+
+#### SendToKafka
+
+- **Return type:** `IConsumePipelineStepBuilder<IOutboxMessage, IOutboxMessage>`
+- **Parameters:**
+  - `pipeline` (`IConsumePipelineStepBuilder<TIn, IOutboxMessage>`)
+  - `producerConfig` (`ProducerConfig`)
+- **Description:** Sends the message to the Kafka topic.
+
+#### ApplyBatchDefaults
+
+- **Return type:** `ProducerConfig`
+- **Parameters:**
+  - `config` (`ProducerConfig`)
+
+#### ApplyOutboxDefaults
+
+- **Return type:** `ProducerConfig`
+- **Parameters:**
+  - `config` (`ProducerConfig`)
+
+#### AddKafka
+
+- **Return type:** `IServiceCollection`
+- **Parameters:**
+  - `services` (`IServiceCollection`)
+- **Description:** Registers Apache Kafka dependencies.
+

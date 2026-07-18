@@ -1,4 +1,4 @@
-# Serialization Guide
+﻿# Serialization Guide
 
 OutboxFlow provides a serialization abstraction for converting messages to byte arrays before saving them to the outbox storage. Built-in serializers support JSON and Protocol Buffers, and you can add custom serializers.
 
@@ -66,16 +66,17 @@ pipeline.SerializeKey<MyCustomSerializer, MyModel, byte[], Guid>(message => mess
 See `samples/OutboxFlow.Sample/CustomSerializer.cs` for a complete example:
 
 ```csharp
-public sealed class CustomSerializer : ISerializer<byte[]>
+<!-- SNIPPET: docs_ser_custom -->
+internal sealed class CustomSerializer : ISerializer<byte[]>
 {
     public byte[] Serialize<TValue>(TValue value)
     {
-        if (value is string str)
-            return Encoding.UTF8.GetBytes(str);
+        if (value is string str) return Encoding.UTF8.GetBytes(str);
 
         return JsonSerializer.SerializeToUtf8Bytes(value);
     }
 }
+<!-- ENDSNIPPET: docs_ser_custom -->
 ```
 
 ### Registration and Usage

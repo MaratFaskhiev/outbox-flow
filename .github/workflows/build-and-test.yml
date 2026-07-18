@@ -11,53 +11,84 @@ env:
 
 jobs:
   build-and-test:
-
-    name: build-and-test-${{matrix.os}}
+    name: build-and-test-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/checkout@v4
 
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Install dependencies
-      run: dotnet restore
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+            ~/.local/share/NuGet
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.fsproj', '**/*.vbproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+      - name: Install dependencies
+        run: dotnet restore
 
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
 
-    - name: Code Coverage Report
-      if: github.event_name == 'pull_request'
-      run: |
-        dotnet tool install -g dotnet-reportgenerator-globaltool
-        reportgenerator -reports:coverage/**/coverage.cobertura.xml -targetdir:CodeCoverage -reporttypes:'HtmlInline;MarkdownSummaryGithub'
+      # Check that documentation snippets are synchronized with sample code
+      - name: Verify documentation snippets
+        shell: pwsh
+        run: ./scripts/verify-doc-snippets.ps1
 
-    - name: Add Coverage PR Comment
-      uses: marocchino/sticky-pull-request-comment@v2
-      if: github.event_name == 'pull_request'
-      with:
-        recreate: true
-        path: CodeCoverage/SummaryGithub.md
+      # Publish projects for documentation generation (configuration.md)
+      - name: Publish projects for documentation generation
+        run: |
+          dotnet publish src/OutboxFlow/OutboxFlow.csproj -c Release -f net10.0 -o ./publish/OutboxFlow
+          dotnet publish src/OutboxFlow.Postgres/OutboxFlow.Postgres.csproj -c Release -f net10.0 -o ./publish/OutboxFlow.Postgres
+          dotnet publish src/OutboxFlow.Kafka/OutboxFlow.Kafka.csproj -c Release -f net10.0 -o ./publish/OutboxFlow.Kafka
 
-    - name: Upload coverage report artifact
-      uses: actions/upload-artifact@v4
-      if: github.event_name == 'pull_request'
-      with:
-        name: CoverageReport
-        path: CodeCoverage/*
+      - name: Generate configuration reference docs
+        shell: pwsh
+        run: |
+          ./scripts/generate-config-docs.ps1 -Configuration Release -TargetFramework net10.0 `
+            -AssemblyPaths @( "publish/OutboxFlow/OutboxFlow.dll", "publish/OutboxFlow.Postgres/OutboxFlow.Postgres.dll", "publish/OutboxFlow.Kafka/OutboxFlow.Kafka.dll" ) `
+            -ResolveRoots @( "publish/OutboxFlow", "publish/OutboxFlow.Postgres", "publish/OutboxFlow.Kafka" )
+
+      - name: Verify configuration docs are up to date
+        shell: pwsh
+        run: |
+          $diff = git diff docs/configuration.md
+          if ($diff) {
+            Write-Host "❌ docs/configuration.md has changes. Please run 'scripts/generate-config-docs.ps1' locally and commit the result."
+            exit 1
+          }
+          Write-Host "✅ docs/configuration.md is up to date"
+
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: Code Coverage Report
+        if: github.event_name == 'pull_request'
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          reportgenerator -reports:coverage/**/coverage.cobertura.xml -targetdir:CodeCoverage -reporttypes:'HtmlInline;MarkdownSummaryGithub'
+
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          recreate: true
+          path: CodeCoverage/SummaryGithub.md
+
+      - name: Upload coverage report artifact
+        uses: actions/upload-artifact@v4
+        if: github.event_name == 'pull_request'
+        with:
+          name: CoverageReport-${{ matrix.os }}
+          path: CodeCoverage/*

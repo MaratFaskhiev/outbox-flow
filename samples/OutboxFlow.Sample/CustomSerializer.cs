@@ -4,6 +4,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace OutboxFlow.Sample;
 
+#region docs_ser_custom
 internal sealed class CustomSerializer : ISerializer<byte[]>
 {
     public byte[] Serialize<TValue>(TValue value)
@@ -13,3 +14,4 @@ internal sealed class CustomSerializer : ISerializer<byte[]>
         return JsonSerializer.SerializeToUtf8Bytes(value);
     }
 }
+#endregion

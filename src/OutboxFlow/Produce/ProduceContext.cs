@@ -8,6 +8,7 @@ public sealed class ProduceContext : IProduceContext
     /// </summary>
     /// <param name="serviceProvider">Service provider.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="headers">Message headers.</param>
     public ProduceContext(
         IServiceProvider serviceProvider,
         CancellationToken cancellationToken,

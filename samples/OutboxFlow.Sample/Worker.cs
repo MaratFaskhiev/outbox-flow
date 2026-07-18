@@ -7,6 +7,7 @@ using OutboxFlow.Sample.Models;
 
 namespace OutboxFlow.Sample;
 
+#region docs_gs_worker
 internal sealed class Worker : BackgroundService
 {
     private static readonly Action<ILogger, Exception?> LogStarted =
@@ -21,6 +22,7 @@ internal sealed class Worker : BackgroundService
         _logger = logger;
     }
 
+    #region docs_qs_produce
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         LogStarted(_logger, null);
@@ -42,9 +44,11 @@ internal sealed class Worker : BackgroundService
             await Task.Delay(10000, stoppingToken).ConfigureAwait(false);
         }
     }
+    #endregion
 
     // ReSharper disable once UnusedMember.Glocal
     // ReSharper disable once UnusedMember.Local
+    #region docs_gs_batch
     private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
     {
         using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
@@ -58,4 +62,6 @@ internal sealed class Worker : BackgroundService
             scope.Complete();
         }
     }
+    #endregion
 }
+#endregion

@@ -9,7 +9,7 @@ public static class ProducerConfigExtensions
 {
     /// <summary>
     /// Sets recommended outbox defaults: <see cref="ProducerConfig.EnableIdempotence" /> to <c>true</c>
-    /// and <see cref="ProducerConfig.Acks" /> to <see cref="Acks.All" />.
+    /// and <see cref="ClientConfig.Acks" /> to <see cref="Acks.All" />.
     /// Existing values are not overwritten.
     /// </summary>
     /// <param name="config">Producer configuration.</param>
