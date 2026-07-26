@@ -25,15 +25,15 @@ values (@destination, @headers::jsonb, @key, @value, @created_at);";
 delete from outbox_message
 where id = any(@ids);";
 
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly NpgsqlConnection _connection;
 
     /// <summary>
     /// Ctor.
     /// </summary>
-    /// <param name="connectionFactory">Database connection factory.</param>
-    public OutboxStorage(IDbConnectionFactory connectionFactory)
+    /// <param name="connection">Database connection.</param>
+    public OutboxStorage(NpgsqlConnection connection)
     {
-        _connectionFactory = connectionFactory;
+        _connection = connection;
     }
 
     /// <inheritdoc />
@@ -44,53 +44,51 @@ where id = any(@ids);";
         if (batchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size should be greater than zero.");
 
-        var connection = await GetConnectionAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
+        await EnsureOpenAsync(cancellationToken).ConfigureAwait(false);
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = FetchCommandText;
+
+        command.Parameters.AddWithValue("batch_size", batchSize);
+
+        var reader = await command
+            .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
+            .ConfigureAwait(false);
+        await using (reader.ConfigureAwait(false))
         {
-            using var command = connection.CreateCommand();
-            command.CommandText = FetchCommandText;
-
-            command.Parameters.AddWithValue("batch_size", batchSize);
-
-            var reader = await command
-                .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
-                .ConfigureAwait(false);
-            await using (reader.ConfigureAwait(false))
+            var result = new List<IOutboxMessage>(batchSize);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                var result = new List<IOutboxMessage>(batchSize);
-                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    var id = await reader.GetFieldValueAsync<long>(0, cancellationToken).ConfigureAwait(false);
+                var id = await reader.GetFieldValueAsync<long>(0, cancellationToken).ConfigureAwait(false);
 
-                    string? destination = null;
-                    if (!await reader.IsDBNullAsync(1, cancellationToken).ConfigureAwait(false))
-                        destination = await reader.GetFieldValueAsync<string>(1, cancellationToken)
-                            .ConfigureAwait(false);
+                string? destination = null;
+                if (!await reader.IsDBNullAsync(1, cancellationToken).ConfigureAwait(false))
+                    destination = await reader.GetFieldValueAsync<string>(1, cancellationToken)
+                        .ConfigureAwait(false);
 
-                    string? headers = null;
-                    if (!await reader.IsDBNullAsync(2, cancellationToken).ConfigureAwait(false))
-                        headers = await reader.GetFieldValueAsync<string>(2, cancellationToken)
-                            .ConfigureAwait(false);
+                string? headers = null;
+                if (!await reader.IsDBNullAsync(2, cancellationToken).ConfigureAwait(false))
+                    headers = await reader.GetFieldValueAsync<string>(2, cancellationToken)
+                        .ConfigureAwait(false);
 
-                    byte[]? key = null;
-                    if (!await reader.IsDBNullAsync(3, cancellationToken).ConfigureAwait(false))
-                        key = await reader.GetFieldValueAsync<byte[]>(3, cancellationToken)
-                            .ConfigureAwait(false);
+                byte[]? key = null;
+                if (!await reader.IsDBNullAsync(3, cancellationToken).ConfigureAwait(false))
+                    key = await reader.GetFieldValueAsync<byte[]>(3, cancellationToken)
+                        .ConfigureAwait(false);
 
-                    var value = await reader.GetFieldValueAsync<byte[]>(4, cancellationToken).ConfigureAwait(false);
+                var value = await reader.GetFieldValueAsync<byte[]>(4, cancellationToken).ConfigureAwait(false);
 
-                    var message = new OutboxMessage(
-                        id,
-                        destination,
-                        DeserializeHeaders(headers),
-                        key,
-                        value);
+                var message = new OutboxMessage(
+                    id,
+                    destination,
+                    DeserializeHeaders(headers),
+                    key,
+                    value);
 
-                    result.Add(message);
-                }
-
-                return result;
+                result.Add(message);
             }
+
+            return result;
         }
     }
 
@@ -100,20 +98,18 @@ where id = any(@ids);";
         ArgumentNullException.ThrowIfNull(context);
         context.EnsureValid();
 
-        var connection = await GetConnectionAsync(context.CancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
-        {
-            using var command = connection.CreateCommand();
-            command.CommandText = InsertCommandText;
+        await EnsureOpenAsync(context.CancellationToken).ConfigureAwait(false);
 
-            command.Parameters.AddWithValue("destination", (object?) context.Destination ?? DBNull.Value);
-            command.Parameters.AddWithValue("headers", (object?) SerializeHeaders(context.Headers) ?? DBNull.Value);
-            command.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) context.Key ?? DBNull.Value);
-            command.Parameters.AddWithValue("value", (object?) context.Value ?? DBNull.Value);
-            command.Parameters.AddWithValue("created_at", DateTime.UtcNow);
+        using var command = _connection.CreateCommand();
+        command.CommandText = InsertCommandText;
 
-            await command.ExecuteNonQueryAsync(context.CancellationToken).ConfigureAwait(false);
-        }
+        command.Parameters.AddWithValue("destination", (object?) context.Destination ?? DBNull.Value);
+        command.Parameters.AddWithValue("headers", (object?) SerializeHeaders(context.Headers) ?? DBNull.Value);
+        command.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) context.Key ?? DBNull.Value);
+        command.Parameters.AddWithValue("value", (object?) context.Value ?? DBNull.Value);
+        command.Parameters.AddWithValue("created_at", DateTime.UtcNow);
+
+        await command.ExecuteNonQueryAsync(context.CancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -123,27 +119,25 @@ where id = any(@ids);";
         ArgumentNullException.ThrowIfNull(contexts);
         if (contexts.Count == 0) return;
 
-        var connection = await GetConnectionAsync(contexts.First().CancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
+        await EnsureOpenAsync(contexts.First().CancellationToken).ConfigureAwait(false);
+
+        var batch = new NpgsqlBatch(_connection);
+        await using (batch.ConfigureAwait(false))
         {
-            var batch = new NpgsqlBatch(connection);
-            await using (batch.ConfigureAwait(false))
+            foreach (var ctx in contexts)
             {
-                foreach (var ctx in contexts)
-                {
-                    ctx.EnsureValid();
+                ctx.EnsureValid();
 
-                    var cmd = new NpgsqlBatchCommand(InsertCommandText);
-                    cmd.Parameters.AddWithValue("destination", (object?) ctx.Destination ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("headers", (object?) SerializeHeaders(ctx.Headers) ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) ctx.Key ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("value", (object?) ctx.Value ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("created_at", DateTime.UtcNow);
-                    batch.BatchCommands.Add(cmd);
-                }
-
-                await batch.ExecuteNonQueryAsync(contexts.First().CancellationToken).ConfigureAwait(false);
+                var cmd = new NpgsqlBatchCommand(InsertCommandText);
+                cmd.Parameters.AddWithValue("destination", (object?) ctx.Destination ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("headers", (object?) SerializeHeaders(ctx.Headers) ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("key", NpgsqlDbType.Bytea, (object?) ctx.Key ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("value", (object?) ctx.Value ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("created_at", DateTime.UtcNow);
+                batch.BatchCommands.Add(cmd);
             }
+
+            await batch.ExecuteNonQueryAsync(contexts.First().CancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -151,26 +145,23 @@ where id = any(@ids);";
     public async ValueTask DeleteAsync(IReadOnlyCollection<IOutboxMessage> outboxMessages,
         CancellationToken cancellationToken = default)
     {
-        var connection = await GetConnectionAsync(cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
-        {
-            if (outboxMessages.Any(x => x is not OutboxMessage))
-                throw new InvalidOperationException($"{typeof(OutboxMessage).FullName} expected.");
+        await EnsureOpenAsync(cancellationToken).ConfigureAwait(false);
 
-            using var command = connection.CreateCommand();
-            command.CommandText = DeleteCommandText;
+        if (outboxMessages.Any(x => x is not OutboxMessage))
+            throw new InvalidOperationException($"{typeof(OutboxMessage).FullName} expected.");
 
-            command.Parameters.AddWithValue("@ids", outboxMessages.Select(x => ((OutboxMessage) x).Id).ToArray());
+        using var command = _connection.CreateCommand();
+        command.CommandText = DeleteCommandText;
 
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
+        command.Parameters.AddWithValue("@ids", outboxMessages.Select(x => ((OutboxMessage) x).Id).ToArray());
+
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask<NpgsqlConnection> GetConnectionAsync(CancellationToken ct)
+    private async ValueTask EnsureOpenAsync(CancellationToken ct)
     {
-        var connection = (NpgsqlConnection) _connectionFactory.Create();
-        await connection.OpenAsync(ct).ConfigureAwait(false);
-        return connection;
+        if (_connection.State == ConnectionState.Closed)
+            await _connection.OpenAsync(ct).ConfigureAwait(false);
     }
 
     private static string? SerializeHeaders(IDictionary<string, string>? headers)

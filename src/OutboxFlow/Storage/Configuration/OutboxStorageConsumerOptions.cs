@@ -1,5 +1,5 @@
-﻿using System.Data;
-using OutboxFlow.Consume;
+﻿using OutboxFlow.Consume;
+using IsolationLevel = System.Data.IsolationLevel;
 
 namespace OutboxFlow.Storage.Configuration;
 

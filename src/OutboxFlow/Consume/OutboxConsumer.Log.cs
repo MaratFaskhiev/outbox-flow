@@ -14,5 +14,8 @@ partial class OutboxConsumer
 
         [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = "Deleted {Count} messages.")]
         public static partial void DeletedMessages(ILogger logger, int count);
+
+        [LoggerMessage(EventId = 3, Level = LogLevel.Warning, Message = "Pipeline execution failed. Lock released.")]
+        public static partial void PipelineExecutionFailed(ILogger logger, Exception exception);
     }
 }

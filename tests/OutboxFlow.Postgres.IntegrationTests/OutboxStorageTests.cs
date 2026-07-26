@@ -18,7 +18,7 @@ public sealed class OutboxStorageTests : IAsyncLifetime
     public OutboxStorageTests(DatabaseFixture databaseFixture)
     {
         _connectionString = databaseFixture.ConnectionString;
-        _storage = new OutboxStorage(new DefaultDbConnectionFactory(_connectionString));
+        _storage = new OutboxStorage(new NpgsqlConnection(_connectionString));
     }
 
     public async Task InitializeAsync()

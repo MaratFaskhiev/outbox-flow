@@ -91,7 +91,8 @@ private static void ConfigureServices(HostBuilderContext hostBuilderContext, ISe
     #region docs_qs_config
     services
         // Register a custom IKafkaProducerBuilder
-        .AddSingleton<IKafkaProducerBuilder, CustomKafkaProducerBuilder>()
+        .AddSingleton<CustomKafkaProducerBuilder>()
+        .AddSingleton<IKafkaProducerBuilder>(sp => sp.GetRequiredService<CustomKafkaProducerBuilder>())
         // Register Apache Kafka dependencies
         .AddKafka()
         // Register the outbox dependencies
@@ -172,21 +173,23 @@ private static void ConfigureServices(HostBuilderContext hostBuilderContext, ISe
 ## 6. Create a Producer Worker
 
 <!-- SNIPPET: docs_gs_worker -->
+
 internal sealed class Worker : BackgroundService
 {
     private static readonly Action<ILogger, Exception?> LogStarted =
         LoggerMessage.Define(LogLevel.Information, new EventId(0), "Background worker is started.");
 
     private readonly ILogger<Worker> _logger;
-    private readonly IProducer _producer;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public Worker(IProducer producer, IConfiguration configuration, ILogger<Worker> logger)
+    public Worker(IServiceScopeFactory scopeFactory, ILogger<Worker> logger)
     {
-        _producer = producer;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
     #region docs_qs_produce
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         LogStarted(_logger, null);
@@ -196,56 +199,98 @@ internal sealed class Worker : BackgroundService
         {
             messageId++;
 
-            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+            using var scope = _scopeFactory.CreateScope();
+            var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+            var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+            connection.Open();
+
+            using var tx = connection.BeginTransaction();
+            try
             {
-                await _producer.ProduceAsync(
+                await producer.ProduceAsync(
                     new SampleTextModel($"Message #{messageId}"),
                     stoppingToken).ConfigureAwait(false);
 
-                scope.Complete();
+                tx.Commit();
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
             }
 
             await Task.Delay(10000, stoppingToken).ConfigureAwait(false);
         }
     }
+
     #endregion
 
     // ReSharper disable once UnusedMember.Glocal
     // ReSharper disable once UnusedMember.Local
+
     #region docs_gs_batch
+
     private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
     {
-        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        using var scope = _scopeFactory.CreateScope();
+        var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+        var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+        var dbConnection = (DbConnection) connection;
+        await dbConnection.OpenAsync(stoppingToken).ConfigureAwait(false);
+
+        using var tx = await dbConnection.BeginTransactionAsync(stoppingToken).ConfigureAwait(false);
+        try
         {
             IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
                 new SampleTextModel($"Batch message #{i}")).ToArray();
 
-            await _producer.ProduceAsync(
+            await producer.ProduceAsync(
                 messages, stoppingToken).ConfigureAwait(false);
 
-            scope.Complete();
+            await tx.CommitAsync(stoppingToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await tx.RollbackAsync(stoppingToken).ConfigureAwait(false);
+            throw;
         }
     }
+
     #endregion
 }
+
 <!-- ENDSNIPPET: docs_gs_worker -->
 
 For batch produce, pass a collection to `ProduceAsync` and configure the pipeline with `ForEach<TItem>()` + `SaveBatch()`:
 
 <!-- SNIPPET: docs_gs_batch -->
+
 private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
 {
-    using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+    using var scope = _scopeFactory.CreateScope();
+    var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+    var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+    var dbConnection = (DbConnection) connection;
+    await dbConnection.OpenAsync(stoppingToken).ConfigureAwait(false);
+
+    using var tx = await dbConnection.BeginTransactionAsync(stoppingToken).ConfigureAwait(false);
+    try
     {
         IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
             new SampleTextModel($"Batch message #{i}")).ToArray();
 
-        await _producer.ProduceAsync(
+        await producer.ProduceAsync(
             messages, stoppingToken).ConfigureAwait(false);
 
-        scope.Complete();
+        await tx.CommitAsync(stoppingToken).ConfigureAwait(false);
+    }
+    catch
+    {
+        await tx.RollbackAsync(stoppingToken).ConfigureAwait(false);
+        throw;
     }
 }
+
 <!-- ENDSNIPPET: docs_gs_batch -->
 
 ## 7. Run the Application

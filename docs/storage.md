@@ -20,11 +20,11 @@ Represents a single outbox message stored in the outbox table.
 The main storage interface for persisting and retrieving messages.
 
 | Method | Description |
-|---|---|---|
-| `FetchAsync(int batchSize, IDbTransaction transaction, CancellationToken)` | Fetches a batch of messages from the outbox table. |
+|---|---|
+| `FetchAsync(int batchSize, CancellationToken)` | Fetches a batch of messages from the outbox table. |
 | `SaveAsync(IProduceContext context)` | Saves a single message to the outbox table. |
-| `SaveBatchAsync(IReadOnlyCollection<IProduceContext> contexts, CancellationToken)` | Saves multiple messages in a single storage operation (e.g., `NpgsqlBatch`). |
-| `DeleteAsync(IReadOnlyCollection<IOutboxMessage>, IDbTransaction, CancellationToken)` | Deletes processed messages from the outbox table. |
+| `SaveBatchAsync(IReadOnlyCollection<IProduceContext> contexts)` | Saves multiple messages in a single storage operation (e.g., `NpgsqlBatch`). |
+| `DeleteAsync(IReadOnlyCollection<IOutboxMessage>, CancellationToken)` | Deletes processed messages from the outbox table. |
 
 ### IOutboxLockManager
 
@@ -32,8 +32,8 @@ Manages distributed locking to ensure only one consumer processes messages at a 
 
 | Method | Description |
 |---|---|
-| `LockAsync(TimeSpan lockTimeout, IDbTransaction, CancellationToken)` | Acquires a lock. Returns `null` if lock unavailable. |
-| `ReleaseAsync(IOutboxLock, IDbTransaction, CancellationToken)` | Releases the lock. |
+| `LockAsync(TimeSpan lockTimeout, CancellationToken)` | Acquires a lock. Returns `null` if lock unavailable. |
+| `ReleaseAsync(IOutboxLock, CancellationToken)` | Releases the lock. |
 
 ### IOutboxLock
 
@@ -46,7 +46,7 @@ Represents an acquired lock.
 
 ### IDbConnectionFactory
 
-Creates database connections.
+Creates database connections. Registered as **Singleton** — one instance for the entire application.
 
 | Method | Description |
 |---|---|
@@ -104,19 +104,19 @@ The built-in PostgreSQL storage consists of the following classes:
 
 | Class | Implements | Description |
 |---|---|---|
-| `OutboxStorage` | `IOutboxStorage` | Saves/fetches/deletes messages using raw SQL commands. |
-| `OutboxLockManager` | `IOutboxLockManager` | Manages locks using PostgreSQL advisory locking (`lock table outbox_state in access exclusive mode nowait`). |
-| `DefaultDbConnectionFactory` | `IDbConnectionFactory` | Creates `NpgsqlConnection` instances from a connection string. |
-| `ProducerOutboxStorageRegistrar` | `IOutboxStorageRegistrar` | Registers `OutboxStorage` for the producer pipeline. |
-| `ConsumerOutboxStorageRegistrar` | `IOutboxStorageRegistrar` | Registers `OutboxStorage`, `OutboxLockManager`, and `DefaultDbConnectionFactory` for the consumer pipeline. |
+| `OutboxStorage` | `IOutboxStorage` | Saves/fetches/deletes messages using raw SQL commands. Uses a scoped `NpgsqlConnection` injected via DI. |
+| `OutboxLockManager` | `IOutboxLockManager` | Manages locks using PostgreSQL advisory locking (`lock table outbox_state in access exclusive mode nowait`). Uses a scoped `NpgsqlConnection` injected via DI. |
+| `DefaultDbConnectionFactory` | `IDbConnectionFactory` | Creates `NpgsqlConnection` instances from a connection string. Registered as Singleton. |
+| `ProducerOutboxStorageRegistrar` | `IOutboxStorageRegistrar` | Registers `OutboxStorage`, `IDbConnectionFactory` (Singleton), and `IDbConnection` (Scoped) for the producer pipeline. |
+| `ConsumerOutboxStorageRegistrar` | `IOutboxStorageRegistrar` | Registers `OutboxStorage`, `OutboxLockManager`, `IDbConnectionFactory` (Singleton), and `IDbConnection` (Scoped) for the consumer pipeline. |
 
-The `UsePostgres()` extension methods wire these registrars automatically:
+The `UsePostgres()` extension methods wire these registrars automatically. Both producer and consumer require a connection string — the connection is registered as a scoped dependency and shared within the same DI scope:
 
 ```csharp
-// Producer - no connection string needed (uses the transaction's connection)
-producer.UsePostgres();
+// Producer - requires a connection string
+producer.UsePostgres(connectionString);
 
-// Consumer - requires a connection string for the background service
+// Consumer - requires a connection string
 consumer.UsePostgres(connectionString);
 ```
 

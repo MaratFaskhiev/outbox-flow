@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Npgsql;
 using OutboxFlow.Storage;
 using Xunit;
 
@@ -24,6 +26,10 @@ public sealed class ProducerOutboxStorageRegistrarTests : IDisposable
         _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
             d.ServiceType == typeof(IDbConnectionFactory) &&
             d.ImplementationInstance is DefaultDbConnectionFactory)));
+        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
+            d.ServiceType == typeof(NpgsqlConnection))));
+        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
+            d.ServiceType == typeof(IDbConnection))));
 
         _registrar.Register(_services.Object);
     }

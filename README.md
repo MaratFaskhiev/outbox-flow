@@ -35,7 +35,8 @@ Configure the outbox in your `Program.cs`:
 <!-- SNIPPET: docs_qs_config -->
     services
         // Register a custom IKafkaProducerBuilder
-        .AddSingleton<IKafkaProducerBuilder, CustomKafkaProducerBuilder>()
+        .AddSingleton<CustomKafkaProducerBuilder>()
+        .AddSingleton<IKafkaProducerBuilder>(sp => sp.GetRequiredService<CustomKafkaProducerBuilder>())
         // Register Apache Kafka dependencies
         .AddKafka()
         // Register the outbox dependencies
@@ -108,6 +109,7 @@ Configure the outbox in your `Program.cs`:
 Produce a message within a database transaction:
 
 <!-- SNIPPET: docs_qs_produce -->
+
 protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 {
     LogStarted(_logger, null);
@@ -117,18 +119,30 @@ protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         messageId++;
 
-        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        using var scope = _scopeFactory.CreateScope();
+        var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+        var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+        connection.Open();
+
+        using var tx = connection.BeginTransaction();
+        try
         {
-            await _producer.ProduceAsync(
+            await producer.ProduceAsync(
                 new SampleTextModel($"Message #{messageId}"),
                 stoppingToken).ConfigureAwait(false);
 
-            scope.Complete();
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
         }
 
         await Task.Delay(10000, stoppingToken).ConfigureAwait(false);
     }
 }
+
 <!-- ENDSNIPPET: docs_qs_produce -->
 
 The consumer background service reads messages from the outbox storage and sends them to Kafka automatically.
@@ -183,26 +197,33 @@ services
 
 In this example, we configure a produce pipeline for the `SampleTextModel` message type.
 
-Now we are ready to produce a first message:
+Now we are ready to produce a first message. Resolve `IProducer` and `IDbConnection` from the same DI scope to share the database connection:
 
 ```csharp
-private readonly IProducer _producer;
-private readonly string _connectionString;
-
-private async Task ProduceSampleMessageAsync(CancellationToken cancellationToken)
+private async Task ProduceSampleMessageAsync(
+    IServiceScopeFactory scopeFactory,
+    CancellationToken cancellationToken)
 {
-    await using var connection = new NpgsqlConnection(_connectionString);
+    using var scope = scopeFactory.CreateScope();
+    var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+    var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
     await connection.OpenAsync(cancellationToken);
 
     await using var transaction = await connection.BeginTransactionAsync(
         IsolationLevel.ReadCommitted, cancellationToken);
+    try
+    {
+        await producer.ProduceAsync(
+            new SampleTextModel("Hello world!"),
+            cancellationToken);
 
-    await _producer.ProduceAsync(
-        new SampleTextModel("Hello world!"),
-        transaction,
-        cancellationToken);
-
-    await transaction.CommitAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+    catch
+    {
+        await transaction.RollbackAsync(cancellationToken);
+        throw;
+    }
 }
 ```
 

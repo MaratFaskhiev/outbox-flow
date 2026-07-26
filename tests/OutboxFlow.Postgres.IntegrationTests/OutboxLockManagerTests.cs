@@ -1,5 +1,6 @@
 ﻿using System.Transactions;
 using FluentAssertions;
+using Npgsql;
 using OutboxFlow.Storage;
 using Xunit;
 
@@ -14,7 +15,7 @@ public sealed class OutboxLockManagerTests
     public OutboxLockManagerTests(DatabaseFixture databaseFixture)
     {
         var connectionString = databaseFixture.ConnectionString;
-        _manager = new OutboxLockManager(new DefaultDbConnectionFactory(connectionString));
+        _manager = new OutboxLockManager(new NpgsqlConnection(connectionString));
     }
 
     [Fact]

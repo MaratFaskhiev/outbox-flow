@@ -26,6 +26,10 @@ internal static class Program
             };
 
         using var host = Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((_, config) =>
+            {
+                config.SetBasePath(AppContext.BaseDirectory);
+            })
             .UseDefaultServiceProvider((ctx, opt) =>
             {
                 if (!ctx.HostingEnvironment.IsDevelopment()) return;
@@ -52,7 +56,8 @@ internal static class Program
         #region docs_qs_config
         services
             // Register a custom IKafkaProducerBuilder
-            .AddSingleton<IKafkaProducerBuilder, CustomKafkaProducerBuilder>()
+            .AddSingleton<CustomKafkaProducerBuilder>()
+            .AddSingleton<IKafkaProducerBuilder>(sp => sp.GetRequiredService<CustomKafkaProducerBuilder>())
             // Register Apache Kafka dependencies
             .AddKafka()
             // Register the outbox dependencies

@@ -20,7 +20,6 @@ All middleware interfaces derive from the base `ISyncMiddleware<TContext, TIn, T
 `IProduceContext` provides access to:
 
 - `Destination` - the message topic/queue name
-- `Transaction` - the current database transaction (`IDbTransaction`)
 - `ServiceProvider` - the DI service provider
 - `CancellationToken` - cancellation token for the operation
 - `Headers` - message headers (`IDictionary<string, string>`)

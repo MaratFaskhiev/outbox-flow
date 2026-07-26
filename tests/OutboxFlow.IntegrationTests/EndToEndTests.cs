@@ -4,6 +4,7 @@ using Confluent.Kafka;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Npgsql;
 using OutboxFlow.Kafka;
 using OutboxFlow.Postgres;
 using OutboxFlow.Produce;
@@ -22,7 +23,7 @@ public sealed class EndToEndTests : IClassFixture<EndToEndFixture>, IDisposable
     public EndToEndTests(EndToEndFixture fixture)
     {
         _fixture = fixture;
-        _storage = new OutboxStorage(new DefaultDbConnectionFactory(_fixture.ConnectionString));
+        _storage = new OutboxStorage(new NpgsqlConnection(_fixture.ConnectionString));
     }
 
     public void Dispose()

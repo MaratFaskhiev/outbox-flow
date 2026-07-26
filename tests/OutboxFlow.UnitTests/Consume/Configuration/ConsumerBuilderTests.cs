@@ -144,7 +144,7 @@ public sealed class ConsumerBuilderTests : IDisposable
 
         defaultPipeline.Should().NotBeNull();
 
-        await defaultPipeline!.RunAsync(Mock.Of<IOutboxMessage>(), Mock.Of<IConsumeContext>());
+        await defaultPipeline.RunAsync(Mock.Of<IOutboxMessage>(), Mock.Of<IConsumeContext>());
 
         isInvoked.Should().BeTrue();
     }
@@ -188,7 +188,7 @@ public sealed class ConsumerBuilderTests : IDisposable
 
         pipeline.Should().NotBeNull();
 
-        await pipeline!.RunAsync(Mock.Of<IOutboxMessage>(), Mock.Of<IConsumeContext>());
+        await pipeline.RunAsync(Mock.Of<IOutboxMessage>(), Mock.Of<IConsumeContext>());
 
         isInvoked.Should().BeTrue();
     }
