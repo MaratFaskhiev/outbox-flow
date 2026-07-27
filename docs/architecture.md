@@ -60,13 +60,12 @@ Two context types carry state through the pipeline:
 
 ### IProduceContext
 
-Used on the produce side. Carries the database transaction, service provider for DI, cancellation token, and mutable message properties.
+Used on the produce side. Carries the service provider for DI, cancellation token, and mutable message properties.
 
 ```csharp
 public interface IProduceContext
 {
     string? Destination { get; set; }
-    IDbTransaction Transaction { get; }
     IServiceProvider ServiceProvider { get; }
     CancellationToken CancellationToken { get; }
     IDictionary<string, string> Headers { get; }
@@ -121,27 +120,53 @@ Pipeline chain:
 OutboxConsumerService (BackgroundService)
      │
      ▼ loop:
-  OutboxConsumer.ConsumeAsync()
+   OutboxConsumer.ConsumeAsync()
      │
-     ├─ Open DB connection
-     ├─ Begin transaction (lock + fetch)
-     ├─ IOutboxLockManager.LockAsync() — acquire lock on outbox_state
+     ├─ BeginTransactionAsync (uses DI-scoped IDbConnection)
+     ├─ IOutboxLockManager.LockAsync() — acquire advisory lock
      ├─ IOutboxStorage.FetchAsync() — read batch of messages
-     ├─ Commit transaction (release lock, keep messages)
+     ├─ Commit (release advisory lock context, keep messages)
      │
      ▼ for each message:
-  IConsumePipelineRegistry.GetPipeline(destination)
+   IConsumePipelineRegistry.GetPipeline(destination)
      │
      ▼ Consume pipeline:
-  [SendToKafka → Confluent.Kafka IProducer]
+   [SendToKafka → Confluent.Kafka IProducer]
      │
-     ├─ Begin transaction (delete + release)
+     ├─ BeginTransactionAsync (delete + release)
      ├─ IOutboxStorage.DeleteAsync() — remove processed messages
-     ├─ IOutboxLockManager.ReleaseAsync() — release the lock
-     └─ Commit transaction
+     ├─ IOutboxLockManager.ReleaseAsync() — release the advisory lock
+     ├─ Commit
+     └─ On failure: ReleaseAsync + rollback (no delete)
 ```
 
-If `ConsumeAsync` fails (lock not acquired, error in pipeline), the service waits and retries.
+If `ConsumeAsync` fails (lock not acquired, error in pipeline), the service waits and retries. On pipeline failure the advisory lock is released and messages are preserved for the next retry.
+
+### 3. Batch Produce
+
+Batch produce uses `Producer.ProduceAsync<IReadOnlyCollection<T>>(...)` with a pipeline configured with `ForEach` and `SaveBatch`:
+
+```
+Application Code
+     │
+     ▼
+Producer.ProduceAsync<IReadOnlyCollection<T>>
+     │  Gets pipeline from IProducePipelineRegistry
+     │  ForEach step — for each message:
+     │     Creates ProduceContext (inherits outer headers)
+     │     Runs sub-pipeline:
+     │       [Serialize] [SetDestination] [SetKey] ...
+     ▼
+     All messages processed
+     │
+     ▼
+   SaveBatch — single storage operation (e.g., NpgsqlBatch)
+     │
+     ▼
+   outbox_message table (within the same DB transaction)
+```
+
+Each message runs through the full pipeline individually, but all messages are persisted in a single storage operation. If any pipeline step throws, the exception propagates and the caller's transaction handles rollback — no partial batch is saved.
 
 ## Extension Points
 
@@ -149,7 +174,7 @@ If `ConsumeAsync` fails (lock not acquired, error in pipeline), the service wait
 |---|---|---|
 | `IOutboxStorage` | Persist and retrieve outbox messages | Add a new storage provider (e.g., SQL Server, MongoDB) |
 | `IOutboxLockManager` | Coordinate consumer access | Change locking strategy (e.g., Redis lock, lease-based) |
-| `IDbConnectionFactory` | Create ADO.NET connections | Control connection creation |
+| `IDbConnectionFactory` | Create ADO.NET connections | Control connection creation (registered as Singleton) |
 | `IProduceSyncMiddleware<TIn, TOut>` | Synchronous produce step | Add logging, validation, transformation |
 | `IProduceAsyncMiddleware<TIn, TOut>` | Asynchronous produce step | Call external services during produce |
 | `IConsumeSyncMiddleware<TIn, TOut>` | Synchronous consume step | Transform or inspect consumed messages |

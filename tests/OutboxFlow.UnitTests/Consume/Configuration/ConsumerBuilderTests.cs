@@ -140,7 +140,7 @@ public sealed class ConsumerBuilderTests : IDisposable
 
         pipelineRegistry.Should().NotBeNull();
 
-        var defaultPipeline = pipelineRegistry.GetPipeline();
+        var defaultPipeline = pipelineRegistry!.GetPipeline();
 
         defaultPipeline.Should().NotBeNull();
 
@@ -184,7 +184,7 @@ public sealed class ConsumerBuilderTests : IDisposable
 
         pipelineRegistry.Should().NotBeNull();
 
-        var pipeline = pipelineRegistry.GetPipeline(destination);
+        var pipeline = pipelineRegistry!.GetPipeline(destination);
 
         pipeline.Should().NotBeNull();
 

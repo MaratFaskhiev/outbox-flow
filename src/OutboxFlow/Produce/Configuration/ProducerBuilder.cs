@@ -15,6 +15,7 @@ public sealed class ProducerBuilder : IProducerBuilder
     /// <inheritdoc />
     public IProducerBuilder ForMessage<T>(Action<IProducePipelineBuilder<T>> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
         if (_messagePipelines.ContainsKey(typeof(T)))
             throw new InvalidOperationException(
                 $"Produce pipeline for the message type \"{typeof(T).Name}\" is already registered.");
@@ -34,7 +35,9 @@ public sealed class ProducerBuilder : IProducerBuilder
 
         var registry = new ProducePipelineRegistry(_messagePipelines);
         services.TryAddSingleton<IProducePipelineRegistry>(registry);
-        services.TryAddScoped<IProducer, Producer>();
+        services.TryAddScoped<IProducer>(sp => new Producer(
+            sp.GetRequiredService<IProducePipelineRegistry>(),
+            sp.GetRequiredService<IServiceProvider>()));
 
         OutboxStorageRegistrar.Register(services);
     }

@@ -4,8 +4,13 @@ using OutboxFlow.Sample.Models;
 
 namespace OutboxFlow.Sample;
 
-public sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel, SampleTextModel>
+#region docs_mw_sync
+internal sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel, SampleTextModel>
 {
+    private static readonly Action<ILogger, string, Exception?> LogMessage =
+        LoggerMessage.Define<string>(LogLevel.Information, new EventId(0),
+            "Produced message: {Value}");
+
     private readonly ILogger<LoggingMiddleware> _logger;
 
     public LoggingMiddleware(ILogger<LoggingMiddleware> logger)
@@ -15,8 +20,12 @@ public sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel, 
 
     public SampleTextModel Run(SampleTextModel message, IProduceContext context)
     {
-        _logger.LogInformation("Produced message: {Value}", message.Value);
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(context);
+
+        LogMessage(_logger, message.Value, null);
 
         return message;
     }
 }
+#endregion

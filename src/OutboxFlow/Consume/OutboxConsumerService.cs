@@ -9,7 +9,7 @@ namespace OutboxFlow.Consume;
 /// <summary>
 /// Background service which consumes stored outbox messages.
 /// </summary>
-public sealed class OutboxConsumerService : BackgroundService
+public sealed partial class OutboxConsumerService : BackgroundService
 {
     private readonly IClock _clock;
     private readonly ILogger<OutboxConsumerService> _logger;
@@ -38,7 +38,7 @@ public sealed class OutboxConsumerService : BackgroundService
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Service is started.");
+        Log.ServiceStarted(_logger);
 
         await Task.Yield();
 
@@ -56,7 +56,7 @@ public sealed class OutboxConsumerService : BackgroundService
                 }
                 catch (Exception e) when (e is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
                 {
-                    _logger.LogError(e, "Failed to process outbox messages.");
+                    Log.FailedToProcess(_logger, e);
                 }
 
                 if (!(consumeResult?.IsSuccessful ?? false))
@@ -67,7 +67,7 @@ public sealed class OutboxConsumerService : BackgroundService
         }
         finally
         {
-            _logger.LogInformation("Service is stopped.");
+            Log.ServiceStopped(_logger);
         }
     }
 }

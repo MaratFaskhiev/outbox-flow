@@ -17,6 +17,7 @@ public static partial class ProducePipelineStepBuilderExtensions
     public static IProducePipelineStepBuilder<TOut, TOut> SerializeWithProtobuf<TIn, TOut>(
         this IProducePipelineStepBuilder<TIn, TOut> step) where TOut : IMessage
     {
+        ArgumentNullException.ThrowIfNull(step);
         return step.AddSyncStep((message, context) =>
         {
             context.Value = message.ToByteArray();
@@ -36,6 +37,7 @@ public static partial class ProducePipelineStepBuilderExtensions
         this IProducePipelineStepBuilder<TIn, TOut> step, Func<TOut, TKey> keyProvider)
         where TKey : IMessage
     {
+        ArgumentNullException.ThrowIfNull(step);
         return step.AddSyncStep((message, context) =>
         {
             context.Key = keyProvider(message).ToByteArray();

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OutboxFlow.Storage;
 using Xunit;
@@ -25,6 +26,8 @@ public sealed class ConsumerOutboxStorageRegistrarTests : IDisposable
             d.ServiceType == typeof(IOutboxLockManager) && d.ImplementationType == typeof(OutboxLockManager))));
         _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
             d.ServiceType == typeof(IDbConnectionFactory))));
+        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
+            d.ServiceType == typeof(IDbConnection))));
 
         _registrar.Register(_services.Object);
     }

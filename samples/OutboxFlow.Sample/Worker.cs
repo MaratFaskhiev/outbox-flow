@@ -1,5 +1,6 @@
-﻿using System.Data;
-using Microsoft.Extensions.Configuration;
+using System.Data;
+using System.Data.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -8,44 +9,91 @@ using OutboxFlow.Sample.Models;
 
 namespace OutboxFlow.Sample;
 
-public sealed class Worker : BackgroundService
-{
-    private readonly string _connectionString;
-    private readonly ILogger<Worker> _logger;
-    private readonly IProducer _producer;
+#region docs_gs_worker
 
-    public Worker(IProducer producer, IConfiguration configuration, ILogger<Worker> logger)
+internal sealed class Worker : BackgroundService
+{
+    private static readonly Action<ILogger, Exception?> LogStarted =
+        LoggerMessage.Define(LogLevel.Information, new EventId(0), "Background worker is started.");
+
+    private readonly ILogger<Worker> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    public Worker(IServiceScopeFactory scopeFactory, ILogger<Worker> logger)
     {
-        _producer = producer;
+        _scopeFactory = scopeFactory;
         _logger = logger;
-        _connectionString = configuration.GetConnectionString("Postgres")!;
     }
+
+    #region docs_qs_produce
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Background worker is started.");
+        LogStarted(_logger, null);
 
         var messageId = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
             messageId++;
 
-            await using (var connection = new NpgsqlConnection(_connectionString))
+            using var scope = _scopeFactory.CreateScope();
+            var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+            var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+            connection.Open();
+
+            using var tx = connection.BeginTransaction();
+            try
             {
-                await connection.OpenAsync(stoppingToken);
-
-                await using var transaction = await connection.BeginTransactionAsync(
-                    IsolationLevel.ReadCommitted, stoppingToken);
-
-                await _producer.ProduceAsync(
+                await producer.ProduceAsync(
                     new SampleTextModel($"Message #{messageId}"),
-                    transaction,
-                    stoppingToken);
+                    stoppingToken).ConfigureAwait(false);
 
-                await transaction.CommitAsync(stoppingToken);
+                tx.Commit();
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
             }
 
-            await Task.Delay(10000, stoppingToken);
+            await Task.Delay(10000, stoppingToken).ConfigureAwait(false);
         }
     }
+
+    #endregion
+
+    // ReSharper disable once UnusedMember.Glocal
+    // ReSharper disable once UnusedMember.Local
+
+    #region docs_gs_batch
+
+    private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+        var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+        var dbConnection = (DbConnection) connection;
+        await dbConnection.OpenAsync(stoppingToken).ConfigureAwait(false);
+
+        using var tx = await dbConnection.BeginTransactionAsync(stoppingToken).ConfigureAwait(false);
+        try
+        {
+            IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
+                new SampleTextModel($"Batch message #{i}")).ToArray();
+
+            await producer.ProduceAsync(
+                messages, stoppingToken).ConfigureAwait(false);
+
+            await tx.CommitAsync(stoppingToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await tx.RollbackAsync(stoppingToken).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    #endregion
 }
+
+#endregion

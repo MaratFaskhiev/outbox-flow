@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OutboxFlow.Storage;
 using OutboxFlow.Storage.Configuration;
@@ -30,5 +31,7 @@ public sealed class ConsumerOutboxStorageRegistrar : IOutboxStorageRegistrar
         services.TryAddScoped<IOutboxStorage, OutboxStorage>();
         services.TryAddScoped<IOutboxLockManager, OutboxLockManager>();
         services.TryAddSingleton<IDbConnectionFactory>(new DefaultDbConnectionFactory(_connectionString));
+        services.TryAddScoped<IDbConnection>(sp =>
+            sp.GetRequiredService<IDbConnectionFactory>().Create());
     }
 }

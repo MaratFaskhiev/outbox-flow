@@ -32,33 +32,118 @@ dotnet add package OutboxFlow.Kafka
 
 Configure the outbox in your `Program.cs`:
 
-```csharp
-services
-    .AddKafka()
-    .AddOutbox(outboxBuilder =>
-        outboxBuilder
-            .AddProducer(producer => producer
-                .UsePostgres()
-                .ForMessage<MyMessage>(pipeline =>
-                    pipeline
-                        .SerializeWithJson()
-                        .SetDestination("my-topic")
-                        .Save()
+<!-- SNIPPET: docs_qs_config -->
+    services
+        // Register a custom IKafkaProducerBuilder
+        .AddSingleton<CustomKafkaProducerBuilder>()
+        .AddSingleton<IKafkaProducerBuilder>(sp => sp.GetRequiredService<CustomKafkaProducerBuilder>())
+        // Register Apache Kafka dependencies
+        .AddKafka()
+        // Register the outbox dependencies
+        .AddOutbox(outboxBuilder =>
+            outboxBuilder
+                // Register the producer dependencies
+                .AddProducer(producer => producer
+                    // Use PostgreSQL as an underlying storage
+                    .UsePostgres(hostBuilderContext.Configuration.GetConnectionString("Postgres")!)
+                    // Configure pipeline for the SampleTextModel message type
+                    .ForMessage<SampleTextModel>(pipeline =>
+                        pipeline
+                            // Add sample synchronous middleware
+                            .AddSyncStep<LoggingMiddleware, SampleTextModel>()
+                            // Convert message to the prototype model
+                            .AddSyncStep((message, _) => new Protos.SampleTextModel
+                            {
+                                Value = message.Value
+                            })
+                            // Serialize the prototype model to a byte array
+                            .SerializeWithProtobuf()
+                            // Add some header
+                            .AddSyncStep((message, context) =>
+                            {
+                                context.Headers.Add("timestamp", DateTime.UtcNow.ToString("O"));
+                                return message;
+                            })
+                            // Set the message destination
+                            .SetDestination("topic")
+                            // Save the message to a storage
+                            .Save()
+                    )
+                    #region docs_qs_batch_config
+                    // Configure pipeline for batch message processing
+                    .ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
+                        pipeline
+                            .ForEach(sub =>
+                            {
+                                sub.AddSyncStep<LoggingMiddleware, SampleTextModel>()
+                                    .AddSyncStep((message, _) => new Protos.SampleTextModel
+                                    {
+                                        Value = message.Value
+                                    })
+                                    .SerializeWithProtobuf()
+                                    .AddSyncStep((message, context) =>
+                                    {
+                                        context.Headers.Add("timestamp",
+                                            DateTime.UtcNow.ToString("O"));
+                                        return message;
+                                    })
+                                    .SetDestination("topic");
+                            })
+                            .SaveBatch()
+                    )
+                    #endregion
                 )
-            )
-            .AddConsumer(consumer =>
-                consumer
-                    .UsePostgres(connectionString)
-                    .SetDefaultRoute(pipeline => pipeline.SendToKafka(producerConfig))
-            )
-    );
-```
+                // Register the consumer dependencies
+                .AddConsumer(consumer =>
+                    consumer
+                        // Use PostgreSQL as an underlying storage
+                        .UsePostgres(hostBuilderContext.Configuration.GetConnectionString("Postgres")!)
+                        // Configure the default pipeline for outbox messages.
+                        // Default route will be used for all destinations which are not configured explicitly
+                        .SetDefaultRoute(pipeline =>
+                            pipeline.SendToKafka<IOutboxMessage, CustomKafkaProducerBuilder>(producerConfig))
+                )
+        );
+<!-- ENDSNIPPET: docs_qs_config -->
 
 Produce a message within a database transaction:
 
-```csharp
-await _producer.ProduceAsync(new MyMessage("Hello!"), transaction, cancellationToken);
-```
+<!-- SNIPPET: docs_qs_produce -->
+
+protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+{
+    LogStarted(_logger, null);
+
+    var messageId = 0;
+    while (!stoppingToken.IsCancellationRequested)
+    {
+        messageId++;
+
+        using var scope = _scopeFactory.CreateScope();
+        var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+        var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+        connection.Open();
+
+        using var tx = connection.BeginTransaction();
+        try
+        {
+            await producer.ProduceAsync(
+                new SampleTextModel($"Message #{messageId}"),
+                stoppingToken).ConfigureAwait(false);
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+
+        await Task.Delay(10000, stoppingToken).ConfigureAwait(false);
+    }
+}
+
+<!-- ENDSNIPPET: docs_qs_produce -->
 
 The consumer background service reads messages from the outbox storage and sends them to Kafka automatically.
 
@@ -112,28 +197,63 @@ services
 
 In this example, we configure a produce pipeline for the `SampleTextModel` message type.
 
-Now we are ready to produce a first message:
+Now we are ready to produce a first message. Resolve `IProducer` and `IDbConnection` from the same DI scope to share the database connection:
 
 ```csharp
-private readonly IProducer _producer;
-private readonly string _connectionString;
-
-private async Task ProduceSampleMessageAsync(CancellationToken cancellationToken)
+private async Task ProduceSampleMessageAsync(
+    IServiceScopeFactory scopeFactory,
+    CancellationToken cancellationToken)
 {
-    await using var connection = new NpgsqlConnection(_connectionString);
+    using var scope = scopeFactory.CreateScope();
+    var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
+    var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
     await connection.OpenAsync(cancellationToken);
 
     await using var transaction = await connection.BeginTransactionAsync(
         IsolationLevel.ReadCommitted, cancellationToken);
+    try
+    {
+        await producer.ProduceAsync(
+            new SampleTextModel("Hello world!"),
+            cancellationToken);
 
-    await _producer.ProduceAsync(
-        new SampleTextModel("Hello world!"),
-        transaction,
-        cancellationToken);
-
-    await transaction.CommitAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+    catch
+    {
+        await transaction.RollbackAsync(cancellationToken);
+        throw;
+    }
 }
 ```
+
+For high-throughput scenarios, produce multiple messages in a single batch by registering a pipeline for a collection type:
+
+<!-- SNIPPET: docs_qs_batch_config -->
+// Configure pipeline for batch message processing
+.ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
+    pipeline
+        .ForEach(sub =>
+        {
+            sub.AddSyncStep<LoggingMiddleware, SampleTextModel>()
+                .AddSyncStep((message, _) => new Protos.SampleTextModel
+                {
+                    Value = message.Value
+                })
+                .SerializeWithProtobuf()
+                .AddSyncStep((message, context) =>
+                {
+                    context.Headers.Add("timestamp",
+                        DateTime.UtcNow.ToString("O"));
+                    return message;
+                })
+                .SetDestination("topic");
+        })
+        .SaveBatch()
+)
+<!-- ENDSNIPPET: docs_qs_batch_config -->
+
+Each message runs through the configured pipeline (serialization, destination, key). The `ForEach` step runs the sub-pipeline for each item and collects the resulting produce contexts. The `SaveBatch` step persists all messages using a single storage operation when the storage supports it (e.g., PostgreSQL `NpgsqlBatch`).
 
 ### Consumers
 
@@ -210,3 +330,5 @@ You can check the complete sample application [here](samples/OutboxFlow.Sample).
 * Entity Framework support
 * OpenTelemetry support
 * and more...
+
+

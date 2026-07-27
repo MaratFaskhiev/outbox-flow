@@ -1,6 +1,6 @@
 ﻿namespace OutboxFlow.Sample.Models;
 
-public sealed class SampleTextModel
+internal sealed class SampleTextModel
 {
     public SampleTextModel(string value)
     {

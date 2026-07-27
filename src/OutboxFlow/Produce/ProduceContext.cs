@@ -1,5 +1,3 @@
-﻿using System.Data;
-
 namespace OutboxFlow.Produce;
 
 /// <inheritdoc />
@@ -8,24 +6,24 @@ public sealed class ProduceContext : IProduceContext
     /// <summary>
     /// Ctor.
     /// </summary>
-    /// <param name="transaction">Transaction.</param>
     /// <param name="serviceProvider">Service provider.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="headers">Message headers.</param>
     public ProduceContext(
-        IDbTransaction transaction, IServiceProvider serviceProvider, CancellationToken cancellationToken)
+        IServiceProvider serviceProvider,
+        CancellationToken cancellationToken,
+        IDictionary<string, string>? headers = null)
     {
-        Transaction = transaction;
         ServiceProvider = serviceProvider;
         CancellationToken = cancellationToken;
 
-        Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Headers = headers != null
+            ? new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <inheritdoc />
     public string? Destination { get; set; }
-
-    /// <inheritdoc />
-    public IDbTransaction Transaction { get; }
 
     /// <inheritdoc />
     public IServiceProvider ServiceProvider { get; }

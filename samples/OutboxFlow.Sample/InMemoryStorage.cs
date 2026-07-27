@@ -1,17 +1,20 @@
 using System.Collections.Concurrent;
-using System.Data;
+using Microsoft.Extensions.DependencyInjection;
+using OutboxFlow.Consume.Configuration;
 using OutboxFlow.Produce;
+using OutboxFlow.Produce.Configuration;
 using OutboxFlow.Storage;
+using OutboxFlow.Storage.Configuration;
 
 namespace OutboxFlow.Sample;
 
+#region docs_storage_impl
 internal sealed class InMemoryStorage : IOutboxStorage
 {
     private readonly ConcurrentQueue<IOutboxMessage> _messages = new();
 
     public ValueTask<IReadOnlyCollection<IOutboxMessage>> FetchAsync(
         int batchSize,
-        IDbTransaction transaction,
         CancellationToken cancellationToken = default)
     {
         var result = new List<IOutboxMessage>(batchSize);
@@ -20,7 +23,7 @@ internal sealed class InMemoryStorage : IOutboxStorage
         return new ValueTask<IReadOnlyCollection<IOutboxMessage>>(result.AsReadOnly());
     }
 
-    public ValueTask SaveAsync(IProduceContext context, CancellationToken cancellationToken = default)
+    public ValueTask SaveAsync(IProduceContext context)
     {
         var message = new InMemoryMessage(
             context.Destination!,
@@ -33,9 +36,25 @@ internal sealed class InMemoryStorage : IOutboxStorage
         return ValueTask.CompletedTask;
     }
 
+    public ValueTask SaveBatchAsync(
+        IReadOnlyCollection<IProduceContext> contexts)
+    {
+        foreach (var context in contexts)
+        {
+            var message = new InMemoryMessage(
+                context.Destination!,
+                new Dictionary<string, string>(context.Headers),
+                context.Key,
+                context.Value!);
+
+            _messages.Enqueue(message);
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
     public ValueTask DeleteAsync(
         IReadOnlyCollection<IOutboxMessage> outboxMessages,
-        IDbTransaction transaction,
         CancellationToken cancellationToken = default)
     {
         return ValueTask.CompletedTask;
@@ -64,3 +83,32 @@ internal sealed class InMemoryStorage : IOutboxStorage
         public byte[] Value { get; }
     }
 }
+#endregion
+
+#region docs_storage_registrar
+internal sealed class InMemoryStorageRegistrar : IOutboxStorageRegistrar
+{
+    public void Register(IServiceCollection services)
+    {
+        services.AddSingleton<IOutboxStorage, InMemoryStorage>();
+    }
+}
+
+internal static class ProducerBuilderExtensions
+{
+    public static IProducerBuilder UseInMemory(this IProducerBuilder builder)
+    {
+        builder.OutboxStorageRegistrar = new InMemoryStorageRegistrar();
+        return builder;
+    }
+}
+
+internal static class ConsumerBuilderExtensions
+{
+    public static IConsumerBuilder UseInMemory(this IConsumerBuilder builder)
+    {
+        builder.SetOutboxStorageRegistrar(new InMemoryStorageRegistrar());
+        return builder;
+    }
+}
+#endregion

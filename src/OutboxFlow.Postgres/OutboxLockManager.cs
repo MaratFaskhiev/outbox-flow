@@ -27,56 +27,70 @@ delete from outbox_state
 where expire_at < clock_timestamp() or id = @id;
 ";
 
+    private readonly NpgsqlConnection _connection;
+
+    /// <summary>
+    /// Ctor.
+    /// </summary>
+    /// <param name="connection">Database connection.</param>
+    public OutboxLockManager(NpgsqlConnection connection)
+    {
+        _connection = connection;
+    }
+
     /// <inheritdoc />
     public async ValueTask<IOutboxLock?> LockAsync(
-        TimeSpan lockTimeout, IDbTransaction transaction, CancellationToken cancellationToken = default)
+        TimeSpan lockTimeout, CancellationToken cancellationToken = default)
     {
-        var connection = EnsureConnection(transaction);
+        await EnsureOpenAsync(cancellationToken).ConfigureAwait(false);
 
-        using var checkCommand = connection.CreateCommand();
+        using var checkCommand = _connection.CreateCommand();
         checkCommand.CommandText = CheckLockCommandText;
         var existingLock = await checkCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
         if (existingLock != null) return null;
 
-        using var tryLockCommand = connection.CreateCommand();
+        using var tryLockCommand = _connection.CreateCommand();
         tryLockCommand.CommandText = TryLockCommandText;
         tryLockCommand.Parameters.AddWithValue("@lock_key", LockKey);
 
         var lockAcquired = (bool?) await tryLockCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
         if (lockAcquired != true) return null;
 
-        using var insertCommand = connection.CreateCommand();
+        using var insertCommand = _connection.CreateCommand();
         insertCommand.CommandText = InsertCommandText;
         insertCommand.Parameters.AddWithValue("@timeout", lockTimeout);
 
-        await using var reader = await insertCommand
+        var reader = await insertCommand
             .ExecuteReaderAsync(CommandBehavior.Default | CommandBehavior.SequentialAccess, cancellationToken)
             .ConfigureAwait(false);
-        await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-        var id = await reader.GetFieldValueAsync<Guid>(0, cancellationToken).ConfigureAwait(false);
-        var expireAt = await reader.GetFieldValueAsync<DateTime>(1, cancellationToken).ConfigureAwait(false);
+        await using (reader.ConfigureAwait(false))
+        {
+            await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            var id = await reader.GetFieldValueAsync<Guid>(0, cancellationToken).ConfigureAwait(false);
+            var expireAt = await reader.GetFieldValueAsync<DateTime>(1, cancellationToken).ConfigureAwait(false);
 
-        return new OutboxLock(id, expireAt);
+            return new OutboxLock(id, expireAt);
+        }
     }
 
     /// <inheritdoc />
-    public async ValueTask ReleaseAsync(IOutboxLock outboxLock, IDbTransaction transaction,
+    public async ValueTask ReleaseAsync(IOutboxLock outboxLock,
         CancellationToken cancellationToken = default)
     {
-        var connection = EnsureConnection(transaction);
+        ArgumentNullException.ThrowIfNull(outboxLock);
 
-        using var command = connection.CreateCommand();
+        await EnsureOpenAsync(cancellationToken).ConfigureAwait(false);
+
+        using var command = _connection.CreateCommand();
         command.CommandText = ReleaseCommandText;
         command.Parameters.AddWithValue("@id", outboxLock.Id);
 
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static NpgsqlConnection EnsureConnection(IDbTransaction transaction)
+    private async ValueTask EnsureOpenAsync(CancellationToken ct)
     {
-        var connection = transaction.Connection as NpgsqlConnection;
-        if (connection == null)
-            throw new InvalidOperationException("Connection must be defined.");
-        return connection;
+        if (_connection.State == ConnectionState.Closed)
+            await _connection.OpenAsync(ct).ConfigureAwait(false);
     }
 }

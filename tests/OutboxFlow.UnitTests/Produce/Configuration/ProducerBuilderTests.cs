@@ -59,7 +59,7 @@ public sealed class ProducerBuilderTests : IDisposable
             Times.Once);
         _services.Verify(
             x => x.Add(It.Is<ServiceDescriptor>(d =>
-                d.ServiceType == typeof(IProducer) && d.ImplementationType == typeof(Producer))),
+                d.ServiceType == typeof(IProducer) && d.ImplementationFactory != null)),
             Times.Once);
     }
 
@@ -96,11 +96,11 @@ public sealed class ProducerBuilderTests : IDisposable
 
         pipelineRegistry.Should().NotBeNull();
 
-        var pipeline = pipelineRegistry.GetPipeline<string>();
+        var pipeline = pipelineRegistry!.GetPipeline<string>();
 
         pipeline.Should().NotBeNull();
 
-        await pipeline.RunAsync(string.Empty, Mock.Of<IProduceContext>());
+        await pipeline!.RunAsync(string.Empty, Mock.Of<IProduceContext>());
 
         isInvoked.Should().BeTrue();
     }

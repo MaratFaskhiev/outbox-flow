@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="OutboxFlow.UnitTests" />
+        <InternalsVisibleTo Include="OutboxFlow.Postgres" />
     </ItemGroup>
 
     <ItemGroup>

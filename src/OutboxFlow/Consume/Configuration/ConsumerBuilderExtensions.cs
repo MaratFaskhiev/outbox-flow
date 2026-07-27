@@ -17,6 +17,7 @@ public static class ConsumerBuilderExtensions
         this IConsumerBuilder consumerBuilder,
         IOutboxStorageRegistrar registrar)
     {
+        ArgumentNullException.ThrowIfNull(consumerBuilder);
         consumerBuilder.OutboxStorageRegistrar = registrar;
 
         return consumerBuilder;
@@ -31,6 +32,7 @@ public static class ConsumerBuilderExtensions
         this IConsumerBuilder consumerBuilder,
         int batchSize)
     {
+        ArgumentNullException.ThrowIfNull(consumerBuilder);
         consumerBuilder.BatchSize = batchSize;
 
         return consumerBuilder;
@@ -45,6 +47,7 @@ public static class ConsumerBuilderExtensions
         this IConsumerBuilder consumerBuilder,
         TimeSpan consumeDelay)
     {
+        ArgumentNullException.ThrowIfNull(consumerBuilder);
         consumerBuilder.ConsumeDelay = consumeDelay;
 
         return consumerBuilder;
@@ -59,6 +62,7 @@ public static class ConsumerBuilderExtensions
         this IConsumerBuilder consumerBuilder,
         IsolationLevel isolationLevel)
     {
+        ArgumentNullException.ThrowIfNull(consumerBuilder);
         consumerBuilder.IsolationLevel = isolationLevel;
 
         return consumerBuilder;
@@ -73,6 +77,7 @@ public static class ConsumerBuilderExtensions
         this IConsumerBuilder consumerBuilder,
         TimeSpan timeout)
     {
+        ArgumentNullException.ThrowIfNull(consumerBuilder);
         consumerBuilder.Timeout = timeout;
 
         return consumerBuilder;

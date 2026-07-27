@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Npgsql;
 using OutboxFlow.Storage;
 using Xunit;
 
@@ -7,7 +9,7 @@ namespace OutboxFlow.Postgres.UnitTests;
 
 public sealed class ProducerOutboxStorageRegistrarTests : IDisposable
 {
-    private readonly ProducerOutboxStorageRegistrar _registrar = new();
+    private readonly ProducerOutboxStorageRegistrar _registrar = new("connectionString");
     private readonly Mock<IServiceCollection> _services = new(MockBehavior.Strict);
 
     public void Dispose()
@@ -21,6 +23,13 @@ public sealed class ProducerOutboxStorageRegistrarTests : IDisposable
         _services.Setup(x => x.Count).Returns(0);
         _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
             d.ServiceType == typeof(IOutboxStorage) && d.ImplementationType == typeof(OutboxStorage))));
+        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
+            d.ServiceType == typeof(IDbConnectionFactory) &&
+            d.ImplementationInstance is DefaultDbConnectionFactory)));
+        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
+            d.ServiceType == typeof(NpgsqlConnection))));
+        _services.Setup(x => x.Add(It.Is<ServiceDescriptor>(d =>
+            d.ServiceType == typeof(IDbConnection))));
 
         _registrar.Register(_services.Object);
     }

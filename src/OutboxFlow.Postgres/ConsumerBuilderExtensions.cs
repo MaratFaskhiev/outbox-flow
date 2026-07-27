@@ -16,6 +16,7 @@ public static class ConsumerBuilderExtensions
         this IConsumerBuilder builder,
         string connectionString)
     {
+        ArgumentNullException.ThrowIfNull(builder);
         builder.OutboxStorageRegistrar = new ConsumerOutboxStorageRegistrar(connectionString);
 
         return builder;

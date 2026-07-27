@@ -23,6 +23,7 @@ public static class ConsumePipelineStepBuilderExtensions
         ProducerConfig producerConfig)
         where TKafkaProducerBuilder : IKafkaProducerBuilder
     {
+        ArgumentNullException.ThrowIfNull(pipeline);
         return pipeline.AddAsyncStep(async (message, context) =>
         {
             var producerRegistry = context.ServiceProvider.GetRequiredService<IKafkaProducerRegistry>();

@@ -13,7 +13,7 @@ using OutboxFlow.Storage;
 
 namespace OutboxFlow.Sample;
 
-public static class Program
+internal static class Program
 {
     public static async Task Main(string[] args)
     {
@@ -26,6 +26,10 @@ public static class Program
             };
 
         using var host = Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((_, config) =>
+            {
+                config.SetBasePath(AppContext.BaseDirectory);
+            })
             .UseDefaultServiceProvider((ctx, opt) =>
             {
                 if (!ctx.HostingEnvironment.IsDevelopment()) return;
@@ -36,9 +40,10 @@ public static class Program
             .ConfigureServices(ConfigureServices)
             .Build();
 
-        await host.RunAsync(cts.Token);
+        await host.RunAsync(cts.Token).ConfigureAwait(false);
     }
 
+    #region docs_gs_config
     private static void ConfigureServices(HostBuilderContext hostBuilderContext, IServiceCollection services)
     {
         services.AddLogging(cfg => cfg.AddConsole());
@@ -48,9 +53,11 @@ public static class Program
             BootstrapServers = "localhost:9092"
         };
 
+        #region docs_qs_config
         services
             // Register a custom IKafkaProducerBuilder
-            .AddSingleton<IKafkaProducerBuilder, CustomKafkaProducerBuilder>()
+            .AddSingleton<CustomKafkaProducerBuilder>()
+            .AddSingleton<IKafkaProducerBuilder>(sp => sp.GetRequiredService<CustomKafkaProducerBuilder>())
             // Register Apache Kafka dependencies
             .AddKafka()
             // Register the outbox dependencies
@@ -59,7 +66,7 @@ public static class Program
                     // Register the producer dependencies
                     .AddProducer(producer => producer
                         // Use PostgreSQL as an underlying storage
-                        .UsePostgres()
+                        .UsePostgres(hostBuilderContext.Configuration.GetConnectionString("Postgres")!)
                         // Configure pipeline for the SampleTextModel message type
                         .ForMessage<SampleTextModel>(pipeline =>
                             pipeline
@@ -83,6 +90,29 @@ public static class Program
                                 // Save the message to a storage
                                 .Save()
                         )
+                        #region docs_qs_batch_config
+                        // Configure pipeline for batch message processing
+                        .ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
+                            pipeline
+                                .ForEach(sub =>
+                                {
+                                    sub.AddSyncStep<LoggingMiddleware, SampleTextModel>()
+                                        .AddSyncStep((message, _) => new Protos.SampleTextModel
+                                        {
+                                            Value = message.Value
+                                        })
+                                        .SerializeWithProtobuf()
+                                        .AddSyncStep((message, context) =>
+                                        {
+                                            context.Headers.Add("timestamp",
+                                                DateTime.UtcNow.ToString("O"));
+                                            return message;
+                                        })
+                                        .SetDestination("topic");
+                                })
+                                .SaveBatch()
+                        )
+                        #endregion
                     )
                     // Register the consumer dependencies
                     .AddConsumer(consumer =>
@@ -95,9 +125,13 @@ public static class Program
                                 pipeline.SendToKafka<IOutboxMessage, CustomKafkaProducerBuilder>(producerConfig))
                     )
             );
+        #endregion
 
+        #region docs_mw_register
         services.AddScoped<LoggingMiddleware>();
+        #endregion
 
         services.AddHostedService<Worker>();
     }
+    #endregion
 }
