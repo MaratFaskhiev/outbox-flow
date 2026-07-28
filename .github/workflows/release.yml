@@ -4,24 +4,46 @@ on:
   push:
     tags:
       - "*"
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.100'
+
       - name: Set VERSION variable from tag
         run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+
       - name: Pack
         run: dotnet pack --configuration Release /p:Version=${VERSION} --output .
-      - name: Push
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+      - name: NuGet login via OIDC
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push packages
         run: |
-          dotnet nuget push OutboxFlow.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
-          dotnet nuget push OutboxFlow.Postgres.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
-          dotnet nuget push OutboxFlow.Kafka.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_API_KEY}
+          dotnet nuget push OutboxFlow.${VERSION}.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          
+          dotnet nuget push OutboxFlow.Postgres.${VERSION}.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          
+          dotnet nuget push OutboxFlow.Kafka.${VERSION}.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+            
