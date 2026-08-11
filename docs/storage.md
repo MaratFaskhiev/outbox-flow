@@ -129,6 +129,7 @@ To implement a custom storage provider, follow these steps:
 Create a class implementing `IOutboxStorage`. See `samples/OutboxFlow.Sample/InMemoryStorage.cs` for a complete in-memory example:
 
 <!-- SNIPPET: docs_storage_impl -->
+```csharp
 internal sealed class InMemoryStorage : IOutboxStorage
 {
     private readonly ConcurrentQueue<IOutboxMessage> _messages = new();
@@ -203,6 +204,7 @@ internal sealed class InMemoryStorage : IOutboxStorage
         public byte[] Value { get; }
     }
 }
+```
 <!-- ENDSNIPPET: docs_storage_impl -->
 
 ### 2. Implement a Registrar
@@ -210,6 +212,7 @@ internal sealed class InMemoryStorage : IOutboxStorage
 Create an `IOutboxStorageRegistrar` that registers your storage in DI:
 
 <!-- SNIPPET: docs_storage_registrar -->
+```csharp
 internal sealed class InMemoryStorageRegistrar : IOutboxStorageRegistrar
 {
     public void Register(IServiceCollection services)
@@ -235,31 +238,12 @@ internal static class ConsumerBuilderExtensions
         return builder;
     }
 }
+```
 <!-- ENDSNIPPET: docs_storage_registrar -->
 
 ### 3. Create Extension Methods
 
-Create extension methods for `IProducerBuilder` and/or `IConsumerBuilder`:
-
-```csharp
-public static class ProducerBuilderExtensions
-{
-    public static IProducerBuilder UseInMemory(this IProducerBuilder builder)
-    {
-        builder.OutboxStorageRegistrar = new InMemoryStorageRegistrar();
-        return builder;
-    }
-}
-
-public static class ConsumerBuilderExtensions
-{
-    public static IConsumerBuilder UseInMemory(this IConsumerBuilder builder)
-    {
-        builder.SetOutboxStorageRegistrar(new InMemoryStorageRegistrar());
-        return builder;
-    }
-}
-```
+The `ProducerBuilderExtensions` and `ConsumerBuilderExtensions` shown in the snippet above already define `UseInMemory()` for both builders, so no extra extension methods are required.
 
 ### 4. Use in Configuration
 

@@ -65,8 +65,6 @@ internal sealed class Worker : BackgroundService
     // ReSharper disable once UnusedMember.Glocal
     // ReSharper disable once UnusedMember.Local
 
-    #region docs_gs_batch
-
     private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -92,8 +90,6 @@ internal sealed class Worker : BackgroundService
             throw;
         }
     }
-
-    #endregion
 }
 
 #endregion
