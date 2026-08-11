@@ -75,7 +75,7 @@ Get-ChildItem -Path $SamplesDir -Filter "*.cs" -Recurse | ForEach-Object {
             exit 1
         }
 
-        $regionLines = $lines[($startLine + 1)..($endLine - 1)]
+        $regionLines = $lines[($startLine + 1)..($endLine - 1)] | Where-Object { $_ -notmatch '^\s*#region\b' -and $_ -notmatch '^\s*#endregion\b' }
         $nonEmpty = $regionLines | Where-Object { $_.Trim() -ne '' }
         if ($nonEmpty.Count -eq 0) {
             Write-Host "  [SKIP] Empty region '$regionName' in $($_.Name)"
@@ -142,11 +142,46 @@ foreach ($mdFile in $mdFiles) {
                 $codeBlockIndent = $matches[1]
             }
 
-            foreach ($line in $regionLines) {
-                if ($line -eq '') {
-                    $newLines += ''
-                } else {
-                    $newLines += "$codeBlockIndent$line"
+            # Detect a manually placed fenced code block between the markers:
+            # the first non-blank line is an opening fence (``` or ```lang) and
+            # the last non-blank line is a closing fence (```). Preserve both and
+            # replace only the content between them.
+            $openingFence = ''
+            $closingFence = ''
+            if ($firstContentLineIndex -lt $i) {
+                $fenceStartIndex = $firstContentLineIndex
+                while ($fenceStartIndex -lt $i -and $lines[$fenceStartIndex].Trim() -eq '') {
+                    $fenceStartIndex++
+                }
+                if ($fenceStartIndex -lt $i -and $lines[$fenceStartIndex] -match '^```\w*\s*$') {
+                    $fenceEndIndex = $i - 1
+                    while ($fenceEndIndex -gt $fenceStartIndex -and $lines[$fenceEndIndex].Trim() -eq '') {
+                        $fenceEndIndex--
+                    }
+                    if ($fenceEndIndex -gt $fenceStartIndex -and $lines[$fenceEndIndex] -match '^```\s*$') {
+                        $openingFence = $lines[$fenceStartIndex]
+                        $closingFence = $lines[$fenceEndIndex]
+                    }
+                }
+            }
+
+            if ($openingFence) {
+                $newLines += $openingFence
+                foreach ($line in $regionLines) {
+                    if ($line -eq '') {
+                        $newLines += ''
+                    } else {
+                        $newLines += $line
+                    }
+                }
+                $newLines += $closingFence
+            } else {
+                foreach ($line in $regionLines) {
+                    if ($line -eq '') {
+                        $newLines += ''
+                    } else {
+                        $newLines += "$codeBlockIndent$line"
+                    }
                 }
             }
 

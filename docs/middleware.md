@@ -38,6 +38,7 @@ All middleware interfaces derive from the base `ISyncMiddleware<TContext, TIn, T
 See `samples/OutboxFlow.Sample/LoggingMiddleware.cs`:
 
 <!-- SNIPPET: docs_mw_sync -->
+```csharp
 internal sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel, SampleTextModel>
 {
     private static readonly Action<ILogger, string, Exception?> LogMessage =
@@ -61,6 +62,7 @@ internal sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel
         return message;
     }
 }
+```
 <!-- ENDSNIPPET: docs_mw_sync -->
 
 ## Async Middleware Example
@@ -68,6 +70,7 @@ internal sealed class LoggingMiddleware : IProduceSyncMiddleware<SampleTextModel
 See `samples/OutboxFlow.Sample/AsyncLoggingMiddleware.cs`:
 
 <!-- SNIPPET: docs_mw_async -->
+```csharp
 internal sealed class AsyncLoggingMiddleware : IProduceAsyncMiddleware<SampleTextModel, SampleTextModel>
 {
     private static readonly Action<ILogger, string, Exception?> LogMessage =
@@ -93,6 +96,7 @@ internal sealed class AsyncLoggingMiddleware : IProduceAsyncMiddleware<SampleTex
         return message;
     }
 }
+```
 <!-- ENDSNIPPET: docs_mw_async -->
 
 ## Consume Middleware Example
@@ -100,6 +104,7 @@ internal sealed class AsyncLoggingMiddleware : IProduceAsyncMiddleware<SampleTex
 See `samples/OutboxFlow.Sample/ConsumeLoggingMiddleware.cs`:
 
 <!-- SNIPPET: docs_mw_consume -->
+```csharp
 internal sealed class ConsumeLoggingMiddleware : IConsumeSyncMiddleware<IOutboxMessage, IOutboxMessage>
 {
     private static readonly Action<ILogger, string, Exception?> LogMessage =
@@ -123,6 +128,7 @@ internal sealed class ConsumeLoggingMiddleware : IConsumeSyncMiddleware<IOutboxM
         return message;
     }
 }
+```
 <!-- ENDSNIPPET: docs_mw_consume -->
 
 ## Middleware Registration
@@ -158,9 +164,9 @@ The middleware generic methods support scenarios where the middleware transforms
 
 | Method | Behavior |
 |---|---|
-| `AddSyncStep<TMiddleware, T>()` | Middleware preserves the type (`T` â†’ `T`). |
+| `AddSyncStep<TMiddleware, T>()` | Middleware preserves the type (`T` → `T`). |
 | `AddSyncStep<TMiddleware, TIn, TOut>()` | Middleware transforms `TIn` to `TOut`, pipeline continues as `TOut`. |
-| `AddSyncStep<TMiddleware, TIn, TOut, TNext>()` | Middleware transforms `TIn` to `TOut`, pipeline continues as `TOut` â†’ `TNext`. |
+| `AddSyncStep<TMiddleware, TIn, TOut, TNext>()` | Middleware transforms `TIn` to `TOut`, pipeline continues as `TOut` → `TNext`. |
 
 The same variants exist for `AddAsyncStep` and for consume pipeline methods.
 
@@ -169,7 +175,9 @@ The same variants exist for `AddAsyncStep` and for consume pipeline methods.
 Middleware classes using DI must be registered in the service collection:
 
 <!-- SNIPPET: docs_mw_register -->
+```csharp
 services.AddScoped<LoggingMiddleware>();
+```
 <!-- ENDSNIPPET: docs_mw_register -->
 
 See `samples/OutboxFlow.Sample/Program.cs` for the complete registration example.

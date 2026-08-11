@@ -63,22 +63,59 @@ create table if not exists outbox_message
 
 ## 5. Configure the Outbox
 
-Create a message model:
+Create a message model. The examples below use `SampleTextModel` from the sample project (`samples/OutboxFlow.Sample/Models/SampleTextModel.cs`):
 
 ```csharp
-// Models/MyMessage.cs
-namespace MyOutboxApp;
+// Models/SampleTextModel.cs
+namespace OutboxFlow.Sample.Models;
 
-public sealed class MyMessage
+internal sealed class SampleTextModel
 {
-    public MyMessage(string value) => Value = value;
+    public SampleTextModel(string value) => Value = value;
     public string Value { get; }
 }
 ```
 
+The pipeline maps `SampleTextModel` to `Protos.SampleTextModel`, a Protobuf message generated at build time by Grpc.Tools from `samples/OutboxFlow.Sample/Protos/models.proto`:
+
+```xml
+<ItemGroup>
+    <PackageReference Include="Grpc.Tools" Version="2.71.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+</ItemGroup>
+
+<ItemGroup>
+    <Protobuf Include="**\*.proto" />
+</ItemGroup>
+```
+
+The `.proto` file itself:
+
+```protobuf
+syntax = "proto3";
+
+option csharp_namespace = "OutboxFlow.Protos";
+
+message SampleTextModel {
+  string value = 1;
+}
+```
+
+Configure DI in `Program.cs` with these usings:
+
+```csharp
+using Confluent.Kafka;
+using OutboxFlow.Sample.Models;
+```
+
+`CustomKafkaProducerBuilder` (an `IKafkaProducerBuilder` implementation) and `LoggingMiddleware` (a sample middleware) are helper classes from the sample project — copy them or provide your own.
+
 Configure DI in `Program.cs`:
 
 <!-- SNIPPET: docs_gs_config -->
+```csharp
 private static void ConfigureServices(HostBuilderContext hostBuilderContext, IServiceCollection services)
 {
     services.AddLogging(cfg => cfg.AddConsole());
@@ -88,7 +125,6 @@ private static void ConfigureServices(HostBuilderContext hostBuilderContext, ISe
         BootstrapServers = "localhost:9092"
     };
 
-    #region docs_qs_config
     services
         // Register a custom IKafkaProducerBuilder
         .AddSingleton<CustomKafkaProducerBuilder>()
@@ -125,7 +161,6 @@ private static void ConfigureServices(HostBuilderContext hostBuilderContext, ISe
                             // Save the message to a storage
                             .Save()
                     )
-                    #region docs_qs_batch_config
                     // Configure pipeline for batch message processing
                     .ForMessage<IReadOnlyCollection<SampleTextModel>>(pipeline =>
                         pipeline
@@ -147,7 +182,6 @@ private static void ConfigureServices(HostBuilderContext hostBuilderContext, ISe
                             })
                             .SaveBatch()
                     )
-                    #endregion
                 )
                 // Register the consumer dependencies
                 .AddConsumer(consumer =>
@@ -160,19 +194,18 @@ private static void ConfigureServices(HostBuilderContext hostBuilderContext, ISe
                             pipeline.SendToKafka<IOutboxMessage, CustomKafkaProducerBuilder>(producerConfig))
                 )
         );
-    #endregion
 
-    #region docs_mw_register
     services.AddScoped<LoggingMiddleware>();
-    #endregion
 
     services.AddHostedService<Worker>();
 }
+```
 <!-- ENDSNIPPET: docs_gs_config -->
 
 ## 6. Create a Producer Worker
 
 <!-- SNIPPET: docs_gs_worker -->
+```csharp
 
 internal sealed class Worker : BackgroundService
 {
@@ -188,7 +221,6 @@ internal sealed class Worker : BackgroundService
         _logger = logger;
     }
 
-    #region docs_qs_produce
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -223,12 +255,9 @@ internal sealed class Worker : BackgroundService
         }
     }
 
-    #endregion
 
     // ReSharper disable once UnusedMember.Glocal
     // ReSharper disable once UnusedMember.Local
-
-    #region docs_gs_batch
 
     private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
     {
@@ -255,43 +284,12 @@ internal sealed class Worker : BackgroundService
             throw;
         }
     }
-
-    #endregion
 }
 
+```
 <!-- ENDSNIPPET: docs_gs_worker -->
 
-For batch produce, pass a collection to `ProduceAsync` and configure the pipeline with `ForEach<TItem>()` + `SaveBatch()`:
-
-<!-- SNIPPET: docs_gs_batch -->
-
-private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
-{
-    using var scope = _scopeFactory.CreateScope();
-    var producer = scope.ServiceProvider.GetRequiredService<IProducer>();
-    var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
-    var dbConnection = (DbConnection) connection;
-    await dbConnection.OpenAsync(stoppingToken).ConfigureAwait(false);
-
-    using var tx = await dbConnection.BeginTransactionAsync(stoppingToken).ConfigureAwait(false);
-    try
-    {
-        IReadOnlyCollection<SampleTextModel> messages = Enumerable.Range(0, 5).Select(i =>
-            new SampleTextModel($"Batch message #{i}")).ToArray();
-
-        await producer.ProduceAsync(
-            messages, stoppingToken).ConfigureAwait(false);
-
-        await tx.CommitAsync(stoppingToken).ConfigureAwait(false);
-    }
-    catch
-    {
-        await tx.RollbackAsync(stoppingToken).ConfigureAwait(false);
-        throw;
-    }
-}
-
-<!-- ENDSNIPPET: docs_gs_batch -->
+For batch produce, pass a collection to `ProduceAsync` and configure the pipeline with `ForEach<TItem>()` + `SaveBatch()` — see `ProduceBatchExampleAsync` in the worker example above.
 
 ## 7. Run the Application
 
@@ -299,7 +297,7 @@ private async Task ProduceBatchExampleAsync(CancellationToken stoppingToken)
 dotnet run
 ```
 
-The worker produces a message every 10 seconds. The consumer background service automatically reads messages from the outbox and sends them to the `my-topic` Kafka topic.
+The worker produces a message every 10 seconds. The consumer background service automatically reads messages from the outbox and sends them to the `topic` Kafka topic.
 
 ## 8. Verify Messages
 
@@ -308,7 +306,7 @@ Use Kafka console consumer to verify:
 ```shell
 docker exec -it outbox-flow-kafka-1 kafka-console-consumer \
   --bootstrap-server localhost:9092 \
-  --topic my-topic \
+  --topic topic \
   --from-beginning
 ```
 

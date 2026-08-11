@@ -94,8 +94,8 @@ The default implementation creates a standard `ProducerBuilder<byte[], byte[]>` 
 
 See `samples/OutboxFlow.Sample/CustomKafkaProducerBuilder.cs` for a complete example:
 
-```csharp
 <!-- SNIPPET: docs_ka_custom -->
+```csharp
 internal sealed class CustomKafkaProducerBuilder : IKafkaProducerBuilder
 {
     public IProducer<byte[], byte[]> Create(ProducerConfig producerConfig)
@@ -104,8 +104,8 @@ internal sealed class CustomKafkaProducerBuilder : IKafkaProducerBuilder
             .Build();
     }
 }
-<!-- ENDSNIPPET: docs_ka_custom -->
 ```
+<!-- ENDSNIPPET: docs_ka_custom -->
 
 Register the custom builder and use it:
 

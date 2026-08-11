@@ -90,7 +90,7 @@ public interface IConsumeContext
 
 ### 1. Produce
 
-`IProducer.ProduceAsync<T>(T message, IDbTransaction transaction, CancellationToken)` is called by application code within a database transaction.
+`IProducer.ProduceAsync<T>(T message, CancellationToken cancellationToken)` is called by application code within a database transaction.
 
 ```
 Application Code
@@ -105,7 +105,6 @@ Pipeline chain:
   [Serialize: convert to byte[] via ISerializer]
   [SetDestination: assign topic/queue name]
   [SetKey: assign message key]
-  [AddHeader: attach metadata]
   [Save: IOutboxStorage.SaveAsync(context)]
      │
      ▼

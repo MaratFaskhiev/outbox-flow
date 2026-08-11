@@ -65,8 +65,8 @@ pipeline.SerializeKey<MyCustomSerializer, MyModel, byte[], Guid>(message => mess
 
 See `samples/OutboxFlow.Sample/CustomSerializer.cs` for a complete example:
 
-```csharp
 <!-- SNIPPET: docs_ser_custom -->
+```csharp
 internal sealed class CustomSerializer : ISerializer<byte[]>
 {
     public byte[] Serialize<TValue>(TValue value)
@@ -76,8 +76,8 @@ internal sealed class CustomSerializer : ISerializer<byte[]>
         return JsonSerializer.SerializeToUtf8Bytes(value);
     }
 }
-<!-- ENDSNIPPET: docs_ser_custom -->
 ```
+<!-- ENDSNIPPET: docs_ser_custom -->
 
 ### Registration and Usage
 
